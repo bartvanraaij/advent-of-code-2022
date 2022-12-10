@@ -17,13 +17,11 @@ for(let line of program) {
 // Part 1
 let x = 1;
 let wantedSignalsSum = 0;
-
 for(let i=1; i<=cycles.length; i++) {
-  const signalStrength = x*i;
-  x = x+cycles[i-1];
   if((i-20) % 40 === 0) {
-    wantedSignalsSum += signalStrength;
+    wantedSignalsSum += (x*i);
   }
+  x = x+cycles[i-1];
 }
 console.log(wantedSignalsSum);
 
