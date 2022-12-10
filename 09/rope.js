@@ -1,35 +1,22 @@
 const fs = require('fs');
-const rawData = fs.readFileSync('sample.txt', 'utf8');
+const rawData = fs.readFileSync('input.txt', 'utf8');
 
 const instructions = rawData.split("\n").map((str) => {
   let [dir,num] = str.split(' ');
   return { dir, steps: parseInt(num, 10) }
 });
 
-console.log(instructions);
-
-const allHeadPositions = [{
-  x: 0, y: 0
-}];
-const allTailPositions = [{
-  x: 0, y: 0
-}];
-
 const determineNewPosition = (pos, dir) => {
   if(dir === 'R') {
-    // Right
     return { x: pos.x+1, y: pos.y };
   }
   if(dir === 'U') {
-    // Right
     return { x: pos.x, y: pos.y+1 };
   }
   if(dir === 'L') {
-    // Right
     return { x: pos.x-1, y: pos.y };
   }
   if(dir === 'D') {
-    // Right
     return { x: pos.x, y: pos.y-1 };
   }
   if(dir === 'RU') {
@@ -46,7 +33,7 @@ const determineNewPosition = (pos, dir) => {
   }
 }
 
-const determineNewTailPosition = (hp, tp, headDir) => {
+const determineNewKnotPosition = (hp, tp, headDir) => {
   if(hp.x === tp.x && hp.y === tp.y) {
     // Overlapping, do nothing
     return tp;
@@ -58,13 +45,17 @@ const determineNewTailPosition = (hp, tp, headDir) => {
     return tp;
   }
 
+  if(hp.x > tp.x && hp.y === tp.y) {
+    // Head is to the right move along the same direction
+    return determineNewPosition(tp, 'R');
+  }
   if(hp.x !== tp.x && hp.y === tp.y) {
     // Head is to the right or left, move along the same direction
-    return determineNewPosition(tp, headDir);
+    return determineNewPosition(tp, hp.x > tp.x ? 'R':'L');
   }
   if(hp.x === tp.x && hp.y !== tp.y) {
     // Head is to the top or bottom, move along the same direction
-    return determineNewPosition(tp, headDir);
+    return determineNewPosition(tp, hp.y > tp.y ? 'U':'D');
   }
   if(hp.x > tp.x && hp.y > tp.y) {
     // Head is to top right, move tail right up diagonally
@@ -84,6 +75,13 @@ const determineNewTailPosition = (hp, tp, headDir) => {
   }
 };
 
+const allHeadPositions = [{
+  x: 0, y: 0
+}];
+const allTailPositions = [{
+  x: 0, y: 0
+}];
+
 const drawGrid = (hp, tp, gridSize = 6) => {
   const lines = [];
   for(let i=0; i<gridSize; i++) {
@@ -101,7 +99,6 @@ const drawGrid = (hp, tp, gridSize = 6) => {
 
 // drawGrid({x:0, y:0},{x:0, y:0});
 
-
 // Part 1
 for(let {dir, steps} of instructions) {
   // console.log(`== ${dir} ${steps} ==\n`);
@@ -115,7 +112,7 @@ for(let {dir, steps} of instructions) {
     // Current tail position
     let ctp = allTailPositions[allTailPositions.length-1];
     // New tail position
-    const ntp = determineNewTailPosition(nhp, ctp, dir);
+    const ntp = determineNewKnotPosition(nhp, ctp, dir);
     allTailPositions.push(ntp);
 
     // drawGrid(nhp, ntp);
@@ -125,3 +122,45 @@ for(let {dir, steps} of instructions) {
 const allTailPositionsAsStrings = allTailPositions.map(({x,y}) => `${x}.${y}`);
 const allUniqueTailPositions = [...new Set(allTailPositionsAsStrings)];
 console.log(allUniqueTailPositions.length);
+
+// Part 2
+const numKnots = 10;
+
+const setupKnots = (numKnots, initialX = 0, initialY = 0) => {
+  let arr = [];
+  for(let i=0; i<numKnots; i++) {
+    arr.push([{x:initialX,y:initialY}]);
+  }
+  return arr;
+}
+
+const allKnotPositions = setupKnots(numKnots, -140, -200);
+
+for(let {dir, steps} of instructions) {
+
+  for(let i=0; i < steps; i++) {
+    // Current position of head
+    let chp = allKnotPositions[0][(allKnotPositions[0].length)-1];
+    // New head position
+    const nhp = determineNewPosition(chp, dir);
+    allKnotPositions[0].push(nhp);
+
+    // All following knots:
+    for(let j=1; j < numKnots; j++) {
+      // Current position of this knot
+      let ckp = allKnotPositions[j][allKnotPositions[j].length-1];
+
+      // New position of previous knot
+      let npkp = allKnotPositions[j-1][allKnotPositions[j-1].length-1];
+
+      // New knot position
+      const nkp = determineNewKnotPosition(npkp, ckp, dir);
+      allKnotPositions[j].push(nkp);
+    }
+  }
+}
+
+const allNewTailPositions = allKnotPositions[9];
+const allNewTailPositionsAsStrings = allNewTailPositions.map(({x,y}) => `${x}.${y}`);
+const allNewUniqueTailPositions = [...new Set(allNewTailPositionsAsStrings)];
+console.log(allNewUniqueTailPositions.length);
