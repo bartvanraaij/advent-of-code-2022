@@ -1,16 +1,12 @@
 const fs = require('fs');
 const rawData = fs.readFileSync('input.txt', 'utf8');
 
-Array.prototype.sum = function () {
-  return [].reduce.call(this, (a, i) => a + i, 0);
-}
-
-let cycles = [];
 const program = rawData.split("\n").map((str) => {
   let [instr,num] = str.split(' ');
   return { instr, value: parseInt(num, 10) }
 });
 
+let cycles = [];
 for(let line of program) {
   cycles.push(0); // Add 0 for noop and the first iteration of addx
   if(line.instr === 'addx') {
@@ -20,16 +16,33 @@ for(let line of program) {
 
 // Part 1
 let x = 1;
-const wantedSignalsStrengthsNums = [20, 60, 100, 140, 180, 220];
 let wantedSignalsSum = 0;
 
 for(let i=1; i<=cycles.length; i++) {
   const signalStrength = x*i;
   x = x+cycles[i-1];
-  if(wantedSignalsStrengthsNums.includes(i)) {
+  if((i-20) % 40 === 0) {
     wantedSignalsSum += signalStrength;
   }
 }
 console.log(wantedSignalsSum);
 
+// Part 2
+let spritePos = 1;
+let pixel = 0;
+for(let cycle=1; cycle<=cycles.length; cycle++) {
 
+  if(spritePos-1 === pixel || spritePos === pixel || spritePos+1 === pixel) {
+    process.stdout.write('★');
+  } else {
+    process.stdout.write(' ');
+  }
+
+  spritePos = spritePos+cycles[cycle-1];
+  pixel++;
+
+  if(cycle % 40 === 0) {
+    pixel = 0;
+    process.stdout.write('\n');
+  }
+}
