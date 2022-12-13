@@ -11,7 +11,7 @@ const packetPairs = packetPairsStrs.map((str) => {
 });
 
 const compareSignal = (a, b) => {
-  console.log(`Comparing a ${JSON.stringify(a)} vs b ${JSON.stringify(b)}`);
+  console.log(`- Compare ${JSON.stringify(a)} vs ${JSON.stringify(b)}`);
   if(typeof a === 'number' && typeof b === 'number') {
     return b-a;
   }
@@ -19,6 +19,12 @@ const compareSignal = (a, b) => {
     // Right side ran out of items
     console.log('Right side ran out of items');
     return -1;
+  }
+  if(typeof a === 'number' && typeof b === 'object') {
+    return compareSignal([a], b);
+  }
+  if(typeof a === 'object' && typeof b === 'number') {
+    return compareSignal(a, [b]);
   }
 
   if(typeof a === 'object' && typeof b === 'object') {
@@ -35,17 +41,10 @@ const compareSignal = (a, b) => {
 
     return 0;
   }
-  if(typeof a === 'number' && typeof b === 'object') {
-    return compareSignal([a], b);
-  }
-  if(typeof a === 'object' && typeof b === 'number') {
-    return compareSignal(a, [b]);
-  }
   console.error('Unexpected comparison', {a,b});
 };
 
 let correctlyOrderedPacketPairs = [];
-let inCorrectlyOrderedPacketPairs = [];
 
 for(let i in packetPairs) {
   const index = parseInt(i, 10)+1;
@@ -54,16 +53,13 @@ for(let i in packetPairs) {
   let thisPairCorrect = compareSignal(packetPair[0], packetPair[1]) >= 0;
 
   if(thisPairCorrect) {
-    console.log(`${index} is correct`);
+    console.log(`Pair ${index} is in the right order`);
     correctlyOrderedPacketPairs.push(index);
   } else {
-    console.log(`${index} is not correct`);
-    inCorrectlyOrderedPacketPairs.push(index);
+    console.log(`Pair ${index} is not in the right order`);
   }
-  console.log('\n');
+  console.log('');
 }
 
 correctlyOrderedPacketPairsSum = correctlyOrderedPacketPairs.reduce((a, i) => a+i);
-console.log({correctlyOrderedPacketPairs, correctlyOrderedPacketPairsSum});
-
-// console.dir({correctlyOrderedPacketPairs, inCorrectlyOrderedPacketPairs}, {depth: null});
+console.log(correctlyOrderedPacketPairsSum);
