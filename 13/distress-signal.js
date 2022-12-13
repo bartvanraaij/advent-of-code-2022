@@ -63,3 +63,17 @@ for(let i in packetPairs) {
 
 correctlyOrderedPacketPairsSum = correctlyOrderedPacketPairs.reduce((a, i) => a+i);
 console.log(correctlyOrderedPacketPairsSum);
+
+// Part 2
+const allPackets =  rawData.split('\n').filter(str => {
+  return str !== ''
+}).map(parsePacket);
+allPackets.push([[2]], [[6]]);
+
+const sortedPackets = allPackets.sort(compareSignal).reverse();
+const sortedPacketsRaw = sortedPackets.map((packet) => JSON.stringify(packet));
+const dividerPacket1Index = (sortedPacketsRaw.indexOf('[[2]]'))+1;
+const dividerPacket2Index = (sortedPacketsRaw.indexOf('[[6]]'))+1;
+const decoderKey = dividerPacket1Index*dividerPacket2Index;
+
+console.log(decoderKey);
