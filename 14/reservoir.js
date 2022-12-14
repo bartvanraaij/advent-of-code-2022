@@ -5,6 +5,7 @@ const toInt = (str) => parseInt(str, 10);
 
 
 const addRock = (cave, x,y) => {
+  // console.log(`Adding ${x}.${y}`);
   return cave.set(`${x}.${y}`, '#');
 };
 const isEmpty = (cave, x,y) => {
@@ -32,6 +33,8 @@ const buildCave = (input) => {
     do {
       let [currentPointX, currentPointY] = rockShape[r];
       let [nextPointX, nextPointY] = rockShape[r+1];
+      allX.add(currentPointX);
+      allY.add(currentPointY);
 
       if(nextPointX > currentPointX) {
         for(let i=currentPointX; i<=nextPointX; i++) {
@@ -60,7 +63,6 @@ const buildCave = (input) => {
       r++;
     } while(r < (rockShape.length-1));
   }
-  console.log(allX, allY);
 
   const meta = {
     minX: Math.min(...allX),
@@ -68,7 +70,7 @@ const buildCave = (input) => {
     minY: Math.min(...allY),
     maxY: Math.max(...allY),
   }
-  return {cave, meta};
+  return [cave,meta];
 }
 
 const drawCave = (cave, startX = 494, endX = 503, startY = 0, endY = 9) => {
@@ -121,21 +123,35 @@ const findSandDropPlace = (cave, startX = 500, startY = 0, minX, maxX, maxY) => 
   return [endX, endY];
 }
 
-
-const {cave, meta} = buildCave(rawData);
-let numSand = 0;
-let tryNext = true;
-while(tryNext) {
-  let [sandX, sandY] = findSandDropPlace(cave, 500, 0, meta.minX, meta.maxX, meta.maxY);
-  if(sandX !== null && sandY !== null) {
-    addSand(cave, sandX, sandY);
-    numSand ++;
-  } else {
-    tryNext = false;
+const dropSand = (cave, meta) => {
+  let numSand = 0;
+  let tryNext = true;
+  while(tryNext) {
+    let [sandX, sandY] = findSandDropPlace(cave, 500, 0, meta.minX, meta.maxX, meta.maxY);
+    if(sandX !== null && sandY !== null) {
+      addSand(cave, sandX, sandY);
+      numSand ++;
+      if(sandX === 500 && sandY === 0) {
+        tryNext = false;
+      }
+    } else {
+      tryNext = false;
+    }
   }
+  return numSand;
 }
 
-drawCave(cave, meta.minX, meta.maxX, meta.minY, meta.maxY);
-
 // Part 1
+const [cave, meta] = buildCave(rawData);
+const numSand = dropSand(cave, meta);
+
+// drawCave(cave, meta.minX, meta.maxX, meta.minY, meta.maxY);
 console.log(numSand);
+
+// Part 2
+const input = rawData + `\n${meta.minX-200},${meta.maxY+2} -> ${meta.minX+200},${meta.maxY+2}`;
+const [cave2, meta2] = buildCave(input);
+
+const numSand2 = dropSand(cave2, meta2);
+// drawCave(cave2, meta2.minX, meta2.maxX, meta2.minY, meta2.maxY);
+console.log(numSand2);
