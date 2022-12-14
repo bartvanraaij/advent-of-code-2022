@@ -85,32 +85,25 @@ const buildCave = () => {
         ! isEmpty(currentX-1, currentY+1) &&
         ! isEmpty(currentX+1, currentY+1)
       ) {
+        // This position is empty for the sand to drop
         endX = currentX;
         endY = currentY;
       } else if (! isEmpty(currentX, currentY+1) &&
         isEmpty(currentX-1, currentY+1)
       ) {
+        // Go left
         currentX--;
       } else if (! isEmpty(currentX, currentY+1) &&
         isEmpty(currentX+1, currentY+1)
       ) {
-        currentX++;
-      }
-
-      if(isEmpty(currentX, currentY+1)) {
-        // Drop down 1 spot
-        currentY++;
-      } else if(isEmpty(currentX-1, currentY)) {
-        // Go left
-        currentX--;
-      } else if(isEmpty(currentX+1, currentY)) {
         // Go right
         currentX++;
-      } else {
-        endY = currentY;
-        endX = currentX;
       }
-    } while(endY === null && currentY <= maxY && endX === null && currentX >= minX && currentX<=maxX);
+      else if(isEmpty(currentX, currentY+1)) {
+        // Drop down 1 spot
+        currentY++;
+      }
+    } while(endY === null && currentY <= maxY && endX === null && currentX >= minX && currentX <= maxX);
 
     return [endX, endY];
   }
