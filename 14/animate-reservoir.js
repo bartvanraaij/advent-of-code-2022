@@ -27,11 +27,13 @@ const buildCave = () => {
     _allX.add(x); _allY.add(y);
   };
 
-  const setup = async (input) => {
+  const animate = async (input, animateDropping = false) => {
     _cave = new Map();
     _allX = new Set();
     _allY = new Set();
     _dimensions = null;
+    console.clear();
+    process.stdout.write('\u001B[?25l');//hide cursor
 
     const rockShapes = input.split('\n').map((line) => {
       return line.split(' -> ').map((coord) => coord.split(',').map((str) => parseInt(str, 10)));
@@ -67,15 +69,8 @@ const buildCave = () => {
         r++;
       } while(r < (rockShape.length-1));
     }
-    await dropSand();
+    await dropSand(animateDropping);
     await delay(2000);
-  }
-
-  const getPrimaryDimensions = () => {
-    return { minX: 482, maxX: 556, minY: 13, maxY: 160 };
-  }
-  const getSecondaryDimensions = () => {
-    return { minX: 482, maxX: 556, minY: 13, maxY: 160 };
   }
 
   const getDisplayDimensions = () => {
@@ -94,7 +89,7 @@ const buildCave = () => {
     return _dimensions;
   };
 
-  const findNextSandDropPlace = async (startX = 500, startY = 0) => {
+  const findNextSandDropPlace = async (animated = false, startX = 500, startY = 0) => {
     // Find sand dropping position
     const {minX, maxX, maxY} = getDisplayDimensions();
     let currentX = startX;
@@ -103,10 +98,12 @@ const buildCave = () => {
     let endX = null;
     let prevX, prevY;
     do {
-      if(prevX) {
-        await display(prevX, prevY, ' ', 0);
+      if(animated) {
+        if(prevX) {
+          await display(prevX, prevY, ' ', 0);
+        }
+        await display(currentX, currentY, 'f');
       }
-      await display(currentX, currentY, 'f');
       prevX = currentX;
       prevY = currentY;
       if(! isEmpty(currentX, currentY+1) &&
@@ -136,11 +133,11 @@ const buildCave = () => {
     return [endX, endY];
   }
 
-  const dropSand = async () => {
+  const dropSand = async (animated) => {
     let numSand = 0;
     let tryNext = true;
     while(tryNext) {
-      let [sandX, sandY] = await findNextSandDropPlace();
+      let [sandX, sandY] = await findNextSandDropPlace(animated);
       if(sandX !== null && sandY !== null) {
         addSand(sandX, sandY);
         await display(sandX, sandY, 's');
@@ -193,13 +190,12 @@ const buildCave = () => {
     }
   }
 
-  return {setup,dropSand,draw,getDimensions};
+  return {animate};
 }
 
 // Part 1
 const cave = buildCave();
 const dim = { minX: 482, maxX: 556, minY: 13, maxY: 160 }
 const input = rawData + `\n${dim.minX-148},${dim.maxY+2} -> ${dim.minX+185},${dim.maxY+2}`;
-console.clear();
-process.stdout.write('\u001B[?25l');//hide cursor
-cave.setup(input);
+
+cave.animate(input, true);
