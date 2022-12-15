@@ -6,15 +6,15 @@ String.prototype.toInt = function () {
 }
 
 const distance = (a,b) => {
-  return  Math.abs(b[0]-a[0]) + Math.abs(b[1]-a[1]);
+  return Math.abs(b[0]-a[0]) + Math.abs(b[1]-a[1]);
 };
 
-function getRangeCoveredBySensorOnRow([sX, sY], dist, row) {
+const getRangeCoveredBySensorOnRow = ([sX, sY], range, row) => {
   const distanceToRow = distance([sX,sY], [sX, row]);
-  if(distanceToRow > dist) {
+  if(distanceToRow > range) {
     return null;
   }
-  return [sX-(dist-distanceToRow), sX+(dist-distanceToRow)];
+  return [sX-(range-distanceToRow), sX+(range-distanceToRow)];
 }
 
 const countCoveredPositionsAtRow = (input, countAtRow) => {
@@ -25,11 +25,11 @@ const countCoveredPositionsAtRow = (input, countAtRow) => {
     const coordinatesOnLine =  Array.from(line.matchAll(/[a-zA-Z]+=(-?[\d]+)/g)).map(
       (regExpMatchArray) => regExpMatchArray[1].toInt()
     );
-    const s = [coordinatesOnLine[0],coordinatesOnLine[1]];
-    const b = [coordinatesOnLine[2],coordinatesOnLine[3]];
-    const d = distance(s,b);
+    const sensor = [coordinatesOnLine[0],coordinatesOnLine[1]];
+    const beacon = [coordinatesOnLine[2],coordinatesOnLine[3]];
+    const range = distance(sensor, beacon);
 
-    let coverRangeOnRow = getRangeCoveredBySensorOnRow(s, d, countAtRow);
+    let coverRangeOnRow = getRangeCoveredBySensorOnRow(sensor, range, countAtRow);
     if(coverRangeOnRow) {
       if (coverRangeOnRow[0] < minXOnRow) minXOnRow = coverRangeOnRow[0];
       if (coverRangeOnRow[1] > maxXOnRow) maxXOnRow = coverRangeOnRow[1];
@@ -40,12 +40,12 @@ const countCoveredPositionsAtRow = (input, countAtRow) => {
 }
 
 // Part 1
-const coveredPositionsAtRow = countCoveredPositionsAtRow(inputData, 2000000);
-console.log(coveredPositionsAtRow);
+const coveredPositionsAtRowCount = countCoveredPositionsAtRow(inputData, 2000000);
+console.log(coveredPositionsAtRowCount);
 
 // Part 2
-function positionIsCoveredBySensor(s, p, dist) {
-  return distance(s,p) <= dist;
+const positionIsCoveredBySensor = (sensorPosition, sensorRange, position) => {
+  return distance(sensorPosition,position) <= sensorRange;
 }
 
 const getSensors = (input) => {
@@ -54,30 +54,30 @@ const getSensors = (input) => {
     const coordinatesOnLine =  Array.from(line.matchAll(/[a-zA-Z]+=(-?[\d]+)/g)).map(
       (regExpMatchArray) => regExpMatchArray[1].toInt()
     );
-    const s = [coordinatesOnLine[0],coordinatesOnLine[1]];
-    const b = [coordinatesOnLine[2],coordinatesOnLine[3]];
-    const d = distance(s,b);
+    const sensor = [coordinatesOnLine[0],coordinatesOnLine[1]];
+    const beacon = [coordinatesOnLine[2],coordinatesOnLine[3]];
+    const range = distance(sensor,beacon);
 
     allSensors.add({
-      position: s,
-      range: d,
+      position: sensor,
+      range
     });
   }
   return allSensors;
 }
 
-function* getAllPositionOutsideSensorCover([sX, sY], dist) {
-  for(let j = dist+1; j>=0; j--) {
-    yield [sX-j+dist+1,sY-j];
-    yield [sX+j-dist-1,sY-j];
-    yield [sX+j-dist-1,sY+j];
-    yield [sX-j+dist+1,sY+j];
+function* getAllPositionsJustOutsideSensorCover([sX, sY], range) {
+  for(let j = range+1; j>=0; j--) {
+    yield [sX-j+range+1,sY-j];
+    yield [sX+j-range-1,sY-j];
+    yield [sX+j-range-1,sY+j];
+    yield [sX-j+range+1,sY+j];
   }
 }
 
-function positionIsCoveredByOtherSensor(sensors, position) {
+const positionIsCoveredByOtherSensor = (sensors, position) => {
   for(let sensor of sensors) {
-    if(positionIsCoveredBySensor(sensor.position, position, sensor.range)) {
+    if(positionIsCoveredBySensor(sensor.position, sensor.range, position)) {
       return true;
     }
   }
@@ -86,17 +86,17 @@ function positionIsCoveredByOtherSensor(sensors, position) {
 
 const findEmptySpot = (input, max) => {
   const sensors = getSensors(input);
-
   for(let sensor of sensors) {
-    for(let outside of getAllPositionOutsideSensorCover(sensor.position, sensor.range)) {
-      if(outside[0] <= max && outside[0] >= 0 && outside[1] <= max && outside[1]>=0) {
-        if(! positionIsCoveredByOtherSensor(sensors, outside)) {
-          return outside;
+    for(let p of getAllPositionsJustOutsideSensorCover(sensor.position, sensor.range)) {
+      if(p[0] <= max && p[0] >= 0 && p[1] <= max && p[1]>=0) {
+        if(! positionIsCoveredByOtherSensor(sensors, p)) {
+          return p;
         }
       }
     }
   }
 }
+
 const availableSpot = findEmptySpot(inputData, 4000000);
 const tuningFrequency = (availableSpot[0] * 4000000) + availableSpot[1];
 console.log(tuningFrequency);
