@@ -10,7 +10,7 @@ const distance = (a,b) => {
 };
 
 const getRangeCoveredBySensorOnRow = ([sX, sY], range, row) => {
-  const distanceToRow = distance([sX,sY], [sX, row]);
+  const distanceToRow = Math.abs(row-sY);
   if(distanceToRow > range) {
     return null;
   }
@@ -29,7 +29,7 @@ const countCoveredPositionsAtRow = (input, countAtRow) => {
     const beacon = [coordinatesOnLine[2],coordinatesOnLine[3]];
     const range = distance(sensor, beacon);
 
-    let coverRangeOnRow = getRangeCoveredBySensorOnRow(sensor, range, countAtRow);
+    const coverRangeOnRow = getRangeCoveredBySensorOnRow(sensor, range, countAtRow);
     if(coverRangeOnRow) {
       if (coverRangeOnRow[0] < minXOnRow) minXOnRow = coverRangeOnRow[0];
       if (coverRangeOnRow[1] > maxXOnRow) maxXOnRow = coverRangeOnRow[1];
@@ -49,7 +49,7 @@ const positionIsCoveredBySensor = (sensorPosition, sensorRange, position) => {
 }
 
 const getSensors = (input) => {
-  let allSensors = new Set();
+  const allSensors = new Set();
   for(let line of input.split('\n')) {
     const coordinatesOnLine =  Array.from(line.matchAll(/[a-zA-Z]+=(-?[\d]+)/g)).map(
       (regExpMatchArray) => regExpMatchArray[1].toInt()
