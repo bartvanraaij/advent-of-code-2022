@@ -12,6 +12,13 @@ const buildCave = () => {
   const isEmpty = (x,y) => {
     return ! _cave.has(`${x}.${y}`);
   };
+  const addAndDrawRock = async (x,y) => {
+    if(! _cave.has(`${x}.${y}`)) {
+      _cave.set(`${x}.${y}`, '#');
+      _allX.add(x); _allY.add(y);
+      await display(x,y,'r');
+    }
+  }
   const getItem = (x, y) => {
     return _cave.get(`${x}.${y}`) ?? '.';
   }
@@ -35,37 +42,33 @@ const buildCave = () => {
       do {
         let [currentPointX, currentPointY] = rockShape[r];
         let [nextPointX, nextPointY] = rockShape[r+1];
-        addRock(currentPointX, currentPointY);
-        await display(currentPointX,currentPointY,'r');
+        await addAndDrawRock(currentPointX, currentPointY);
 
         if(nextPointX > currentPointX) {
           for(let i=currentPointX; i<=nextPointX; i++) {
-            addRock(i, currentPointY);
-            await display(i,currentPointY,'r');
+            await addAndDrawRock(i, currentPointY);
           }
         }
         if(nextPointX < currentPointX) {
           for(let i=currentPointX; i>=nextPointX; i--) {
-            addRock(i, currentPointY);
-            await display(i,currentPointY,'r');
+            await addAndDrawRock(i, currentPointY);
           }
         }
         if(nextPointY > currentPointY) {
           for(let j=currentPointY; j<=nextPointY; j++) {
-            addRock(currentPointX, j);
-            await display(currentPointX,j,'r');
+            await addAndDrawRock(currentPointX, j);
           }
         }
         if(nextPointY < currentPointY) {
           for(let j=currentPointY; j>=nextPointY; j--) {
-            addRock(currentPointX, j);
-            await display(currentPointX,j,'r');
+            await addAndDrawRock(currentPointX, j);
           }
         }
         r++;
       } while(r < (rockShape.length-1));
     }
-    dropSand();
+    await dropSand();
+    await delay(2000);
   }
 
   const getPrimaryDimensions = () => {
@@ -91,14 +94,21 @@ const buildCave = () => {
     return _dimensions;
   };
 
-  const findNextSandDropPlace = (startX = 500, startY = 0) => {
+  const findNextSandDropPlace = async (startX = 500, startY = 0) => {
     // Find sand dropping position
     const {minX, maxX, maxY} = getDisplayDimensions();
     let currentX = startX;
     let currentY = startY;
     let endY = null;
     let endX = null;
+    let prevX, prevY;
     do {
+      if(prevX) {
+        await display(prevX, prevY, ' ', 0);
+      }
+      await display(currentX, currentY, 'f');
+      prevX = currentX;
+      prevY = currentY;
       if(! isEmpty(currentX, currentY+1) &&
         ! isEmpty(currentX-1, currentY+1) &&
         ! isEmpty(currentX+1, currentY+1)
@@ -130,7 +140,7 @@ const buildCave = () => {
     let numSand = 0;
     let tryNext = true;
     while(tryNext) {
-      let [sandX, sandY] = findNextSandDropPlace();
+      let [sandX, sandY] = await findNextSandDropPlace();
       if(sandX !== null && sandY !== null) {
         addSand(sandX, sandY);
         await display(sandX, sandY, 's');
@@ -146,16 +156,20 @@ const buildCave = () => {
   }
 
 
-  const display = async (x,y, item) => {
+  const display = async (x,y, item, d = 2) => {
     //
     // return { minX: 334, maxX: 667, minY: -3, maxY: 162 };
     process.stdout.cursorTo(x-334,y+3);
     if(item === 's') {
       process.stdout.write(`\x1b[1m\x1b[32mo\x1b[0m`);
-    } else if (item === 'r') {
+    } else if (item === 'f') {
+      process.stdout.write(`\x1b[1m\x1b[36mo\x1b[0m`);
+    }  else if (item === 'r') {
       process.stdout.write(`\x1b[31m#\x1b[0m`);
+    } else {
+      process.stdout.write(` `);
     }
-    await delay(1);
+    await delay(d);
   }
 
 
