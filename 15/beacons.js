@@ -50,7 +50,7 @@ const positionIsCoveredBySensor = (sensorPosition, sensorRange, position) => {
 
 const getSensors = (input) => {
   const allSensors = new Set();
-  for(let line of input.split('\n')) {
+  for(let line of input.split('\n').reverse()) {
     const coordinatesOnLine =  Array.from(line.matchAll(/[a-zA-Z]+=(-?[\d]+)/g)).map(
       (regExpMatchArray) => regExpMatchArray[1].toInt()
     );
