@@ -160,9 +160,9 @@ const getAllRouteFlowScores = (valves, startValveName = 'AA', steps= 26) => {
     highestResult = findNextBestPressureReleasePathAndAccumulateRouteScores(startValve, valvesToVisit, steps, [], highestResult, 0, routeFlowScores);
   } while(highestResult > 0);
 
-  // Fill in the other combinations
+  // Fill in the highest found score for subset for combinations that aren't in the list yet
   const allPressuredValveNames = [...valves.values()].filter((v) => v.flowRate>0).map(v => v.key);
-  const appendSubroutesToRouteFlows = (valvesList) => {
+  const findSubrouteScoreForRouteFlow = (valvesList) => {
     const combinationKey = getRouteKey(valvesList);
     if(routeFlowScores.has(combinationKey)) {
       return routeFlowScores.get(combinationKey);
@@ -173,7 +173,7 @@ const getAllRouteFlowScores = (valves, startValveName = 'AA', steps= 26) => {
       for(let i in valvesList) {
         const newList = [...valvesList];
         newList.splice(i.toInt(), 1);
-        const thisSubscore = appendSubroutesToRouteFlows(newList);
+        const thisSubscore = findSubrouteScoreForRouteFlow(newList);
         if(thisSubscore > bestSubsetScore) {
           bestSubsetScore = thisSubscore;
         }
@@ -181,7 +181,7 @@ const getAllRouteFlowScores = (valves, startValveName = 'AA', steps= 26) => {
       routeFlowScores.set(combinationKey, bestSubsetScore);
     }
   }
-  appendSubroutesToRouteFlows(allPressuredValveNames);
+  findSubrouteScoreForRouteFlow(allPressuredValveNames);
 
   return routeFlowScores;
 }
