@@ -93,10 +93,8 @@ const findHighestPressureReleasePathFromInput = (inputData, startValveKey = 'AA'
 }
 
 // Part 1
-console.time('Part 1');
 const totalPressureRelease = findHighestPressureReleasePathFromInput(inputData);
 console.log(totalPressureRelease);
-console.timeEnd('Part 1');
 
 // Part 2
 const findNextBestPressureReleasePathAndAccumulateRouteScores = (currentValve, valves, steps = 26, openedValves = [], currentBest = Infinity, currentAccumulatedFlow = 0, routeFlowScoresMap) => {
@@ -211,7 +209,5 @@ const findBestCombinedFlowScore = (inputData) => {
 }
 
 // Part 2:
-console.time('Part 2');
 const bestCombinedFlowScore = findBestCombinedFlowScore(inputData);
 console.log(bestCombinedFlowScore);
-console.timeEnd('Part 2');
