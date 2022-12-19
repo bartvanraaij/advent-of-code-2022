@@ -109,12 +109,16 @@ const isCube = ([x,y,z], grid) => {
   return grid[x][y][z] === 'C';
 }
 
-const hasAWayOut = (position, grid, gridSize, visited = [], trapped = []) => {
+const hasAWayOut = (position, grid, gridSize, visited = [], trapped, notTrapped) => {
 
   let thisPos = xyzKey(position);
 
-  if(trapped.includes(thisPos)) {
+  if(trapped.has(thisPos)) {
     return false;
+  }
+
+  if(notTrapped.has(thisPos)) {
+    return true;
   }
 
   if(visited.includes(thisPos)) {
@@ -124,8 +128,14 @@ const hasAWayOut = (position, grid, gridSize, visited = [], trapped = []) => {
 
   if(isOnGridEdge(position, gridSize)) {
     let thisIsBlocked = isCube(position, grid);
-    if(thisIsBlocked) trapped.push(thisIsBlocked);
-    return ! thisIsBlocked;
+    if(thisIsBlocked) {
+      trapped.add(thisIsBlocked);
+      return false;
+    }
+    else {
+      notTrapped.add(thisIsBlocked);
+      return true;
+    }
   }
   for(let direction of directions) {
     let look = getAdjacentCoords(position, direction);
@@ -135,20 +145,23 @@ const hasAWayOut = (position, grid, gridSize, visited = [], trapped = []) => {
       continue;
     }
 
-    let thisLookWayIsAWayOut = hasAWayOut(look, grid, gridSize, [...visited], trapped);
+    let thisLookWayIsAWayOut = hasAWayOut(look, grid, gridSize, [...visited], trapped, notTrapped);
     if(thisLookWayIsAWayOut) {
       return true;
     }
   }
 
-  trapped.push(thisPos);
+  trapped.add(thisPos);
   return false;
 }
 
 const countAllFreeSidesWithTrappedSpotsAdded = (inputData) => {
   const cubes = getCubes(inputData);
   const {gridSize,grid, emptySpots} = build3dGrid(cubes);
-  const trappedEmptySpots = emptySpots.filter(s => ! hasAWayOut(s, grid, gridSize));
+
+  const trapped = new Set();
+  const notTrapped = new Set();
+  const trappedEmptySpots = emptySpots.filter(s => ! hasAWayOut(s, grid, gridSize, [], trapped, notTrapped));
 
   const cubesAndTrappedEmptySpots = [...cubes,...trappedEmptySpots];
   return cubes.reduce((acc, cube) => {
