@@ -56,11 +56,13 @@ const getRelativeRockPoints = (rockShape, [y,x]) => {
   return rockShape.map(([rY, rX]) => [(rY+y), (rX+x)]);
 }
 
-const drawAllRocks = (activeRock, activeRockPos, roomHeight, rockStack) => {
+const drawAllRocks = (activeRock, activeRockPos, rockStack) => {
+  let freeLevel = getFreeLevelY(rockStack);
+  let drawingSpace = 8;
 
   const activeRockRelativePointsStrs = getRelativeRockPoints(activeRock, activeRockPos).map(yxCoord);
 
-  for(let j = roomHeight-1; j>=0; j--) {
+  for(let j = (freeLevel+drawingSpace); j>=0; j--) {
     for(let i = 0; i<CHAMBER_WIDTH; i++) {
       let foundAPoint = false;
       const thisPointCoord = yxCoord([j,i]);
@@ -74,6 +76,8 @@ const drawAllRocks = (activeRock, activeRockPos, roomHeight, rockStack) => {
     }
     process.stdout.write('\n');
   }
+  process.stdout.write('-------');
+  process.stdout.write('\n');
   process.stdout.write('\n');
 
 }
@@ -120,11 +124,22 @@ const placeRock = (rockShape, [y,x], rockStack) => {
   }
 }
 
-const getRoomHeight = (rockStack) => {
+const getFreeLevelY  = (rockStack) => {
   let maxY = -Infinity;
+  if(rockStack.size === 0) return 0;
   for(let coord of rockStack.values()) {
     let [y,x] = coordYx(coord);
-    if(y> maxY) maxY = y;
+    if(y>= maxY) maxY = y;
+  }
+  return maxY+1;
+}
+
+const getRoomHeight = (rockStack) => {
+  let maxY = -Infinity;
+  if(rockStack.size === 0) return 0;
+  for(let coord of rockStack.values()) {
+    let [y,x] = coordYx(coord);
+    if(y>= maxY) maxY = y;
   }
   return maxY+1;
 }
@@ -143,32 +158,27 @@ const findRoomHeightAfterNumBlocks = (inputData, numBlocks) => {
 
   let movements = inputData.split('');
   let numMovements = movements.length;
-  let numRocks = rockShapes.length;
+  let numRockShapes = rockShapes.length;
   let newRock = true;
-  let rockNum = -1;
+  let rockNum = 0;
   let movementNum = 0;
   let rock;
-  let roomHeight = 0;
   let xStartPos = 2;
   let x = 2; // Start pos
   let y = 4;
   let rockStack = new Set();
 
   while (true) {
-    if (rockNum === numBlocks - 1) break;
 
     if (newRock) {
       // console.log('A new rock begins falling:');
       rockNum++;
-      rock = [...rockShapes[rockNum % numRocks]];
+      rock = [...rockShapes[(rockNum-1) % numRockShapes]];
       newRock = false;
-      // A new rock starts on x=2 and y=4 above floor/currentHeight
-      const rockHeight = getRockHeight(rock);
-      roomHeight = roomHeight + rockHeight + 3;
-      y = roomHeight-(rockHeight);
+      const freeLevelY = getFreeLevelY(rockStack);
+      y = freeLevelY+3; // Free space of 3
       x = xStartPos;
-      // drawAllRocks(rock, [y, x], roomHeight, rockStack);
-      continue;
+      // drawAllRocks(rock, [y, x], rockStack);
     }
 
     // Try movement
@@ -183,7 +193,7 @@ const findRoomHeightAfterNumBlocks = (inputData, numBlocks) => {
     } else {
       // console.log(`Cannot perform movement ${thisMovement}`);
     }
-    // drawAllRocks(rock, [y, x], roomHeight, rockStack);
+    // drawAllRocks(rock, [y, x], rockStack);
 
     // Then one movement down
     tryX = x;
@@ -196,16 +206,55 @@ const findRoomHeightAfterNumBlocks = (inputData, numBlocks) => {
       // console.log('Cannot move down anymore, rock is stuck');
       placeRock(rock, [y,x], rockStack);
       newRock = true;
-      roomHeight = getRoomHeight(rockStack);
+      if (rockNum === (numBlocks)) break;
     }
+    // drawAllRocks(rock, [y, x],  rockStack);
+    // await delay(1000);
 
-    // drawAllRocks(rock, [y, x], roomHeight, rockStack);
-    // await delay(1000)
   }
-  return roomHeight-3; // Minus the free space
+  return getFreeLevelY(rockStack); // Plus free space
 };
 
 // Part 1
-const roomHeight = findRoomHeightAfterNumBlocks(inputData, 2022);
+const numRocks = 2022;
+const roomHeight = findRoomHeightAfterNumBlocks(inputData, numRocks);
 console.log(roomHeight);
 
+// const roomHeight2 = findRoomHeightAfterNumBlocks(inputData, numRocks, true);
+// console.log(roomHeight2);
+// console.log({
+//   realAnswer: 12497, roomHeight2
+// });
+
+// Part 2
+// const roomHeight2 = findRoomHeightAfterNumBlocks(inputData, 1000000000000);
+// console.log(roomHeight2);
+
+//First cycle of movements
+// const blocksPerMovementCycle = 1700;
+// const movementCycleHeight = 2654;
+//
+// const numberOfBlocks = 1000000000000;
+// console.log(numberOfBlocks/blocksPerMovementCycle);
+// const numberOfFullMovementCycles = Math.floor((numberOfBlocks)/blocksPerMovementCycle)-1;
+// console.log(numberOfFullMovementCycles);
+//
+// const heightAfterFullMovementCycles = numberOfFullMovementCycles*movementCycleHeight;
+// const numberOfBlocksAfterFullMovementCycles = numberOfFullMovementCycles*blocksPerMovementCycle;
+//
+// const remainingBlocks = numberOfBlocks-numberOfBlocksAfterFullMovementCycles;
+// console.log(`Finding height of remaining ${remainingBlocks} blocks`);
+// const heightOfRemainingBlocks = findRoomHeightAfterNumBlocks(inputData, remainingBlocks);
+//
+// const total = heightAfterFullMovementCycles + heightOfRemainingBlocks;
+// console.log(total);
+//
+// // const realAnswer = findRoomHeightAfterNumBlocks(inputData, numberOfBlocks);
+// console.log({total});
+//{ total: 12485, realAnswer: 12497 }, diff 12
+//155980576752 is too low
+//1561176470573 is too high
+//1561176470571
+//1561176470554 is too low
+//1561176470582
+//1561176470624
