@@ -161,7 +161,7 @@ const findRoomHeightAfterNumBlocks = (inputData, numBlocks) => {
   let numRockShapes = rockShapes.length;
   let newRock = true;
   let rockNum = 0;
-  let movementNum = 0;
+  let movementNum = 1;
   let rock;
   let xStartPos = 2;
   let x = 2; // Start pos
@@ -171,48 +171,37 @@ const findRoomHeightAfterNumBlocks = (inputData, numBlocks) => {
   while (true) {
 
     if (newRock) {
-      // console.log('A new rock begins falling:');
       rockNum++;
       rock = [...rockShapes[(rockNum-1) % numRockShapes]];
       newRock = false;
       const freeLevelY = getFreeLevelY(rockStack);
       y = freeLevelY+3; // Free space of 3
       x = xStartPos;
-      // drawAllRocks(rock, [y, x], rockStack);
     }
 
-    // Try movement
-    const thisMovement = movements[(movementNum % numMovements)];
-
+    const thisMovement = movements[((movementNum-1) % numMovements)];
     movementNum++;
+
     let tryX = (thisMovement === '>') ? x+1 : x-1;
     let tryY = y;
     if(rockCanBePlacedAtPos(rock, [tryY, tryX], rockStack)) {
       x = tryX;
       y = tryY;
-    } else {
-      // console.log(`Cannot perform movement ${thisMovement}`);
     }
-    // drawAllRocks(rock, [y, x], rockStack);
 
-    // Then one movement down
     tryX = x;
     tryY = y-1;
-    // console.log(`Rock falls 1 unit`);
     if(rockCanBePlacedAtPos(rock, [tryY, tryX], rockStack)) {
       x = tryX;
       y = tryY;
     } else {
-      // console.log('Cannot move down anymore, rock is stuck');
       placeRock(rock, [y,x], rockStack);
       newRock = true;
       if (rockNum === (numBlocks)) break;
     }
-    // drawAllRocks(rock, [y, x],  rockStack);
-    // await delay(1000);
 
   }
-  return getFreeLevelY(rockStack); // Plus free space
+  return getFreeLevelY(rockStack);
 };
 
 // Part 1
@@ -220,41 +209,84 @@ const numRocks = 2022;
 const roomHeight = findRoomHeightAfterNumBlocks(inputData, numRocks);
 console.log(roomHeight);
 
-// const roomHeight2 = findRoomHeightAfterNumBlocks(inputData, numRocks, true);
-// console.log(roomHeight2);
-// console.log({
-//   realAnswer: 12497, roomHeight2
-// });
-
 // Part 2
-// const roomHeight2 = findRoomHeightAfterNumBlocks(inputData, 1000000000000);
-// console.log(roomHeight2);
+const getBlocksAndHeightForOneInputCycle = (inputData) => {
 
-//First cycle of movements
-// const blocksPerMovementCycle = 1700;
-// const movementCycleHeight = 2654;
-//
-// const numberOfBlocks = 1000000000000;
-// console.log(numberOfBlocks/blocksPerMovementCycle);
-// const numberOfFullMovementCycles = Math.floor((numberOfBlocks)/blocksPerMovementCycle)-1;
-// console.log(numberOfFullMovementCycles);
-//
-// const heightAfterFullMovementCycles = numberOfFullMovementCycles*movementCycleHeight;
-// const numberOfBlocksAfterFullMovementCycles = numberOfFullMovementCycles*blocksPerMovementCycle;
-//
-// const remainingBlocks = numberOfBlocks-numberOfBlocksAfterFullMovementCycles;
-// console.log(`Finding height of remaining ${remainingBlocks} blocks`);
-// const heightOfRemainingBlocks = findRoomHeightAfterNumBlocks(inputData, remainingBlocks);
-//
-// const total = heightAfterFullMovementCycles + heightOfRemainingBlocks;
-// console.log(total);
-//
-// // const realAnswer = findRoomHeightAfterNumBlocks(inputData, numberOfBlocks);
-// console.log({total});
-//{ total: 12485, realAnswer: 12497 }, diff 12
-//155980576752 is too low
-//1561176470573 is too high
-//1561176470571
-//1561176470554 is too low
-//1561176470582
-//1561176470624
+  let movements = inputData.split('');
+  let numMovements = movements.length;
+  let numRockShapes = rockShapes.length;
+  let newRock = true;
+  let rockNum = 0;
+  let movementNum = 1;
+  let rock;
+  let xStartPos = 2;
+  let x = 2; // Start pos
+  let y = 4;
+  let rockStack = new Set();
+  let movementCycle = 0;
+  let movementStats = [];
+
+  while (true) {
+
+    if(movementNum> 1 && (movementNum) % numMovements === 0) {
+      movementCycle++;
+      movementStats.push({
+        numRocks: rockNum,
+        height: getFreeLevelY(rockStack),
+      });
+    }
+    if(movementCycle===2) {
+      return {
+        blocksPerMovementCycle: movementStats[1].numRocks - movementStats[0].numRocks,
+        heightPerMovementCycle: movementStats[1].height - movementStats[0].height,
+      }
+    }
+
+    if (newRock) {
+      rockNum++;
+      rock = [...rockShapes[(rockNum-1) % numRockShapes]];
+      newRock = false;
+      const freeLevelY = getFreeLevelY(rockStack);
+      y = freeLevelY+3; // Free space of 3
+      x = xStartPos;
+    }
+
+    // Try movement
+    const thisMovement = movements[((movementNum-1) % numMovements)];
+    movementNum++;
+    let tryX = (thisMovement === '>') ? x+1 : x-1;
+    let tryY = y;
+    if(rockCanBePlacedAtPos(rock, [tryY, tryX], rockStack)) {
+      x = tryX;
+      y = tryY;
+    }
+
+    tryX = x;
+    tryY = y-1;
+    if(rockCanBePlacedAtPos(rock, [tryY, tryX], rockStack)) {
+      x = tryX;
+      y = tryY;
+    } else {
+      placeRock(rock, [y,x], rockStack);
+      newRock = true;
+    }
+  }
+};
+
+const findRoomHeightAfterHugeAmountOfBlocks = (inputData, numRocks) => {
+  const {
+    blocksPerMovementCycle,
+    heightPerMovementCycle
+  } = getBlocksAndHeightForOneInputCycle(inputData);
+
+  const numberOfFullMovementCycles = Math.floor((numRocks)/blocksPerMovementCycle)-1;
+  const heightAfterFullMovementCycles = numberOfFullMovementCycles*heightPerMovementCycle;
+  const numberOfBlocksAfterFullMovementCycles = numberOfFullMovementCycles*blocksPerMovementCycle;
+
+  const remainingBlocks = numRocks-numberOfBlocksAfterFullMovementCycles;
+  const heightOfRemainingBlocks = findRoomHeightAfterNumBlocks(inputData, remainingBlocks);
+  return heightAfterFullMovementCycles + heightOfRemainingBlocks;
+};
+
+const roomHeight2 = findRoomHeightAfterHugeAmountOfBlocks(inputData, 1000000000000);
+console.log(roomHeight2);
