@@ -150,8 +150,9 @@ const countAllFreeSidesWithTrappedSpotsAdded = (inputData) => {
   const {gridSize,grid, emptySpots} = build3dGrid(cubes);
   const trappedEmptySpots = emptySpots.filter(s => ! hasAWayOut(s, grid, gridSize));
 
+  const cubesAndTrappedEmptySpots = [...cubes,...trappedEmptySpots];
   return cubes.reduce((acc, cube) => {
-    return getAmountOfFreeSides(cube, [...cubes,...trappedEmptySpots]) + acc;
+    return getAmountOfFreeSides(cube, cubesAndTrappedEmptySpots) + acc;
   }, 0);
 }
 
