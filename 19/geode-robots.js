@@ -150,7 +150,7 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
         return curr > acc ? curr : acc;
       });
 
-      if(timeToGatherResourcesForThisRobot > (timeLeft)) {
+      if(timeToGatherResourcesForThisRobot > timeLeft) {
         // We cannot build this robot any time soon
         continue;
       }
