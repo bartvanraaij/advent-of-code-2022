@@ -106,11 +106,10 @@ const getGroveCoordinates = (inputData, decryptionMultiplier = 1, numberOfMixes 
   // Find the 1000th, 2000th and 3000th number
   const index0 = numberIdListWorkingCopy.findIndex((itm) => itm === num0id);
   const wantedIndexes = [1000,2000,3000];
-  let wantedNumbersSum = 0;
-  for (let wantedIndex of wantedIndexes) {
+  let wantedNumbersSum = wantedIndexes.reduce((acc, wantedIndex) => {
     const realIndex = (wantedIndex + index0) % (numberIdListWorkingCopy.length);
-    wantedNumbersSum += idToNum(numberIdListWorkingCopy[realIndex]);
-  }
+    return acc +  idToNum(numberIdListWorkingCopy[realIndex]);
+  }, 0);
   return wantedNumbersSum;
 }
 
