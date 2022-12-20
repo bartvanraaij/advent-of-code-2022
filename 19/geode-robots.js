@@ -157,10 +157,10 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
 
       // Define the next run
       const newRunResources = resources.map((curr, j) => {
-        return curr +
-            robots[j] *
-            (timeToGatherResourcesForThisRobot + 1) -
-            (thisRobotCosts[j] || 0);
+        return curr + // Current amount of this resource
+            robots[j] * (timeToGatherResourcesForThisRobot + 1) // The amount of robots and the needed time per robot,
+                                                                // plus 1 minute to build those robots
+          -  (thisRobotCosts[j]); // Minus the cost of the robot we're building
       });
 
       const newRobots = robots.map((curr, k) => {
