@@ -191,12 +191,11 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
 
 const getBlueprintQualityLevelSum = (inputData, numMinutes) => {
   const blueprints = inputData.split('\n').map(parseBlueprint);
-  let qualityLevelSum = 0;
-  for(let blueprint of blueprints) {
+  let qualityLevelSum = blueprints.reduce((acc, blueprint) => {
     const score = getBlueprintMaximumGeodeCrackAmount(blueprint, numMinutes);
     const qualityLevel = score * blueprint.id;
-    qualityLevelSum += qualityLevel;
-  }
+    return acc + qualityLevel;
+  }, 0);
 
   return qualityLevelSum;
 }
@@ -209,7 +208,7 @@ console.log(qualityLevelSum);
 const getBluePrintsScoreProduct = (inputData, numBluePrints, numMinutes) => {
   const blueprints = inputData.split('\n').slice(0, numBluePrints).map(parseBlueprint);
   const scores = blueprints.map((blueprint) => {
-    return  getBlueprintMaximumGeodeCrackAmount(blueprint, numMinutes);
+    return getBlueprintMaximumGeodeCrackAmount(blueprint, numMinutes);
   });
   const product = scores.reduce((acc, curr) => acc*curr, 1);
   return product;
