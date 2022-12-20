@@ -15,11 +15,9 @@ let idToNum = (id) => {
 };
 
 const moveItemInList = (list, currIndex, destIndex) => {
-  // const newList = [...list];
   const item = list[currIndex];
   list.splice(currIndex, 1);
   list.splice(destIndex, 0, item);
-  return list;
 }
 
 const moveNumInList = (id, list, verbose=false) => {
@@ -36,7 +34,6 @@ const moveNumInList = (id, list, verbose=false) => {
   }
   if(newIndex > (list.length-1)) {
     let numMovesRight = number % (list.length-1);
-
     if(currentIndexOfId+numMovesRight > (list.length-1)) {
       newIndex = numMovesRight-((list.length-1)-currentIndexOfId);
     } else {
