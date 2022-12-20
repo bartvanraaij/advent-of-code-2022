@@ -113,6 +113,7 @@ const getGroveCoordinates = (inputData, decryptionMultiplier = 1, numberOfMixes 
   return wantedNumbersSum;
 }
 
+// Part 1
 const groveCoordinates = getGroveCoordinates(inputData);
 console.log(groveCoordinates);
 
