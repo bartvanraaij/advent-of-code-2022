@@ -86,11 +86,10 @@ class FactoryRun {
 
   maxGeodesICanCrack() {
     // The amount of geodes this factory can crack is the amount of cracked geodes we have,
-    // plus the amount of geode robots we have and the number of minutes left
+    // plus the amount of geode robots we have times the number of minutes left
     // E.g. with 2 robots and 10 minutes, we can crack 20 geodes
     return this.resources[3] + (this.robots[3] * (this.numMinutes - this.currentMinute));
   }
-
 
 }
 
@@ -125,7 +124,8 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
 
     for (let type in robots) {
 
-      // We can only build one robot per run (minute)
+      // We can only build _one_ robot per run (minute)!
+
       // So if we have more than enough of that resource already, don't bother building that robot!
       // Using the max amount +2 here as cut off, seems to work best:
       if (resources[type] > (blueprint.getMaxCostToBuildRobot(type)+1)) {
@@ -134,6 +134,7 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
 
       const thisRobotCosts = blueprint.getRobotCosts(type);
 
+      // Get the max time to gather resources, i.e. the highest amount counts
       const timeToGatherResourcesForThisRobot = resources.map((currentAmount, resourceType) => {
         const resourcesStillNeededForThisRobot = thisRobotCosts[resourceType] - currentAmount;
         if(resourcesStillNeededForThisRobot <= 0) {
@@ -155,7 +156,9 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
         continue;
       }
 
-      // Define the next run
+      // Looks like we can build this robot in time, let's define the next run
+
+      // Define the new resource amounts:
       const newRunResources = resources.map((curr, j) => {
         return curr + // Current amount of this resource
             robots[j] * (timeToGatherResourcesForThisRobot + 1) // The amount of robots and the needed time per robot,
@@ -163,12 +166,15 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
           -  (thisRobotCosts[j]); // Minus the cost of the robot we're building
       });
 
+      // Define the new robot amounts (the same plus one of the current type added)
       const newRobots = robots.map((curr, k) => {
         return curr +((type.toInt()===k) ? 1:0)
       });
 
+      // Add the number of minutes we need to gather all resources
       const newMinute = currentMinute + timeToGatherResourcesForThisRobot;
 
+      // Add this run to our runs list
       runs.push(
         new FactoryRun(
           newRunResources,
