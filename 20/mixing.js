@@ -1,6 +1,5 @@
 const fs = require('fs');
 const sampleData = fs.readFileSync('sample.txt', 'utf8');
-const sampleData2 = fs.readFileSync('sample2.txt', 'utf8');
 const inputData = fs.readFileSync('input.txt', 'utf8');
 
 String.prototype.toInt = function () {
@@ -22,7 +21,6 @@ const moveItemInList = (list, currIndex, destIndex) => {
   list.splice(destIndex, 0, item);
   return list;
 }
-
 
 const moveNumInList = (id, list, verbose=false) => {
   const currentIndexOfId = list.findIndex((itm) => itm===id);
@@ -89,21 +87,23 @@ const displayIdList = (numList) => {
   console.log(numList.map(idToNum).join(', ') + '\n');
 }
 
-const getGroveCoordinates = (inputData) => {
+const getGroveCoordinates = (inputData, decryptionMultiplier = 1, numberOfMixes = 1, verbose = false) => {
   const numbers = inputData.split('\n').map(toInt);
   const numberIdList = [];
   let num0id;
   for (let i in numbers) {
-    const number = numbers[i];
+    const number = numbers[i] * decryptionMultiplier;
     const id = numToId(i, number);
     numberIdList.push(id);
     if (number === 0) num0id = id;
   }
   const numberIdListWorkingCopy = [...numberIdList];
 
-  for (let numberId of numberIdList) {
-    moveNumInList(numberId, numberIdListWorkingCopy);
-    // displayIdList(numSetList);
+  for(let i = 0; i<numberOfMixes; i++) {
+    for (let numberId of numberIdList) {
+      moveNumInList(numberId, numberIdListWorkingCopy, verbose);
+      if(verbose) displayIdList(numberIdListWorkingCopy);
+    }
   }
 
   // Find the 1000th, 2000th and 3000th number
@@ -119,4 +119,7 @@ const getGroveCoordinates = (inputData) => {
 
 const groveCoordinates = getGroveCoordinates(inputData);
 console.log(groveCoordinates);
-//8028
+
+// Part 2
+const realGroveCoordinates = getGroveCoordinates(inputData, 811589153, 10);
+console.log(realGroveCoordinates);
