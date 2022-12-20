@@ -95,11 +95,8 @@ class FactoryRun {
 
 }
 
-
-var totalRuns = 0;
 const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
   let currentMaxCrackableGeodes = 0;
-  // let resourceTypes = ['ore','clay','obsidian','geode'];
   const runs = [];
 
   // Starting state:
@@ -112,10 +109,7 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
     )
   );
 
-
   do {
-    totalRuns++;
-
     const thisRun = runs.pop();
     const currentMinute = thisRun.currentMinute + 1;
     const robots = thisRun.robots;
@@ -128,14 +122,14 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
     }
 
     if(currentMinute === numMinutes) continue; // This run has run out of minutes
-
     const timeLeft = numMinutes - currentMinute;
 
     for (let type in robots) {
 
       // We can only build one robot per run (minute)
-      // So if we have enough of a certain resource, don't bother gathering more to build that robot
-      if (resources[type] > blueprint.getMaxCostToBuildRobot(type)) {
+      // So if we have more than enough of that resource already, don't bother building that robot!
+      // Using the max amount +2 here as cut off, seems to work best:
+      if (resources[type] > (blueprint.getMaxCostToBuildRobot(type)+1)) {
         continue;
       }
 
@@ -143,9 +137,15 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
 
       const timeToGatherResourcesForThisRobot = resources.map((currentAmount, resourceType) => {
         const resourcesStillNeededForThisRobot = thisRobotCosts[resourceType] - currentAmount;
-        if(resourcesStillNeededForThisRobot <= 0) return 0;
+        if(resourcesStillNeededForThisRobot <= 0) {
+          return 0;
+        }
+
         const numRobotsWeHaveToGatherThisResource = robots[resourceType]; // Every robot can do one per minute
-        if(numRobotsWeHaveToGatherThisResource === 0) return Infinity;
+        if(numRobotsWeHaveToGatherThisResource === 0) {
+          return Infinity;
+        }
+
         return Math.ceil(resourcesStillNeededForThisRobot / numRobotsWeHaveToGatherThisResource);
       }).reduce((acc, curr) => {
         return curr > acc ? curr : acc;
@@ -165,7 +165,7 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
       });
 
       const newRobots = robots.map((curr, k) => {
-        return curr +((type==k) ? 1:0)
+        return curr +((type.toInt()===k) ? 1:0)
       });
 
       const newMinute = currentMinute + timeToGatherResourcesForThisRobot;
@@ -184,11 +184,11 @@ const getBlueprintMaximumGeodeCrackAmount = (blueprint, numMinutes = 24) => {
   return currentMaxCrackableGeodes;
 };
 
-const getBlueprintQualityLevelSum = (inputData) => {
+const getBlueprintQualityLevelSum = (inputData, numMinutes) => {
   const blueprints = inputData.split('\n').map(parseBlueprint);
   let qualityLevelSum = 0;
   for(let blueprint of blueprints) {
-    let score = getBlueprintMaximumGeodeCrackAmount(blueprint);
+    const score = getBlueprintMaximumGeodeCrackAmount(blueprint, numMinutes);
     const qualityLevel = score * blueprint.id;
     qualityLevelSum += qualityLevel;
   }
@@ -197,5 +197,18 @@ const getBlueprintQualityLevelSum = (inputData) => {
 }
 
 // Part 1
-const qualityLevelSum = getBlueprintQualityLevelSum(inputData);
+const qualityLevelSum = getBlueprintQualityLevelSum(inputData, 24);
 console.log(qualityLevelSum);
+
+// Part 2
+const getBluePrintsScoreProduct = (inputData, numBluePrints, numMinutes) => {
+  const blueprints = inputData.split('\n').slice(0, numBluePrints).map(parseBlueprint);
+  const scores = blueprints.map((blueprint) => {
+    return  getBlueprintMaximumGeodeCrackAmount(blueprint, numMinutes);
+  });
+  const product = scores.reduce((acc, curr) => acc*curr, 1);
+  return product;
+}
+
+const blueprintsScoreProduct = getBluePrintsScoreProduct(inputData, 3, 32);
+console.log(blueprintsScoreProduct);
