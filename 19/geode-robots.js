@@ -88,7 +88,6 @@ class FactoryRun {
     // The amount of geodes this factory can crack is the amount of cracked geodes we have,
     // plus the amount of geode robots we have and the number of minutes left
     // E.g. with 2 robots and 10 minutes, we can crack 20 geodes
-    // we can crack 2
     return this.resources[3] + (this.robots[3] * (this.numMinutes - this.currentMinute));
   }
 
