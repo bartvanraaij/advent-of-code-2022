@@ -1,4 +1,5 @@
 const fs = require('fs');
+const {Equation, parse} = require("algebra.js");
 const sampleData = fs.readFileSync('sample.txt', 'utf8');
 const inputData = fs.readFileSync('input.txt', 'utf8');
 
@@ -21,6 +22,20 @@ const performOperation = (value1, value2, operation) => {
     result = value1/value2;
   }
   return result;
+}
+
+const calculationToString = (calc) => {
+  if(typeof calc === 'number') return `${calc.toString()}`;
+  const parts = [];
+  for(let component of calc) {
+    if(typeof component === 'number' || typeof component === 'string') {
+      parts.push(component);
+    }
+    else {
+      parts.push(calculationToString(component));
+    }
+  }
+  return `(${parts.join(' ')})`;
 }
 
 class Monkey {
@@ -181,57 +196,17 @@ console.log(monkeyRootNumber);
 
 
 // Part 2
-const tribe = parseInput(inputData, 'root', 'humn');
-
-const displayCalculation = (calc) => {
-  if(typeof calc === 'number') return `${calc.toString()}`;
-  const parts = [];
-  for(let component of calc) {
-    if(typeof component === 'number' || typeof component === 'string') {
-      parts.push(component);
-    }
-    else {
-      parts.push(displayCalculation(component));
-    }
-  }
-  return `(${parts.join(' ')})`;
-}
-
-
-const getOppositeOperation = (op) => {
-  if(op ==='+') return '-';
-  if(op ==='-') return '+';
-  if(op ==='*') return '/';
-  if(op ==='/') return '*';
-}
-
-const solveEquation = (first, second, variableToFind = 'humn') => {
-
-  const currentSolution = (typeof first === 'number') ? first : second;
-  let otherSide = (typeof first === 'number') ? second : first;
-
-  if(otherSide===variableToFind) {
-    return currentSolution;
-  }
-
-  let [leftHandSide, operation, rightHandSide] = otherSide;
-
-  const numberSide = typeof leftHandSide === 'number' ? leftHandSide : rightHandSide;
-  const nonNumberSide = typeof leftHandSide === 'number' ? rightHandSide : leftHandSide;
-
-  const oppositeOperation = getOppositeOperation(operation);
-  const newSolution = performOperation(currentSolution, numberSide, oppositeOperation);
-  console.log({currentSolution, numberSide, oppositeOperation, newSolution});
-  return solveEquation(newSolution, nonNumberSide);
-}
-
-
 const getMonkeyTribeHumanEquationAnswer = (tribe) => {
-
-  const refereeCalculations = tribe.referee.dependencies.map((dependency) => dependency.getCalculation());
-  return solveEquation(...refereeCalculations);
-
+  const refereeCalculations = tribe.referee.dependencies.map((dependency) => calculationToString(dependency.getCalculation()));
+  const equation = new Equation(parse(refereeCalculations[0]), parse(refereeCalculations[1]));
+  return equation.solveFor(tribe.human.name).numer;
 }
 
-const answer = getMonkeyTribeHumanEquationAnswer(tribe);
+const findHumanNumberFromInput = (inputData) => {
+  const tribe = parseInput(inputData, 'root', 'humn');
+  return getMonkeyTribeHumanEquationAnswer(tribe);
+  return findMonkeysNumber(tribe, monkeyNumberToFind);
+}
+
+const answer = findHumanNumberFromInput(inputData);
 console.log(answer);
