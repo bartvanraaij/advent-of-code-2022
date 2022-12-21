@@ -186,7 +186,8 @@ console.log(monkeyRootNumber);
 // Part 2
 const getMonkeyTribeHumanEquationAnswer = (tribe, refereeName = 'root') => {
   const refereeCalculations = tribe.getMonkey(refereeName).dependencies.map(
-    (dependency) => calculationToString(dependency.getCalculation()));
+    (dependency) => calculationToString(dependency.getCalculation())
+  );
   const equation = new Equation(parse(refereeCalculations[0]), parse(refereeCalculations[1]));
   return equation.solveFor(tribe.human.name).numer;
 }
