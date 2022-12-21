@@ -205,7 +205,6 @@ const getMonkeyTribeHumanEquationAnswer = (tribe) => {
 const findHumanNumberFromInput = (inputData) => {
   const tribe = parseInput(inputData, 'root', 'humn');
   return getMonkeyTribeHumanEquationAnswer(tribe);
-  return findMonkeysNumber(tribe, monkeyNumberToFind);
 }
 
 const answer = findHumanNumberFromInput(inputData);
