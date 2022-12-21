@@ -92,10 +92,6 @@ class Monkey {
   }
 }
 
-class Referee extends Monkey {
-
-}
-
 class Human extends Monkey {
   constructor({name}) {
     super({name, number: 0 });
@@ -105,7 +101,6 @@ class Human extends Monkey {
 class Tribe {
 
   monkeys;
-  referee;
   human;
 
   constructor() {
@@ -124,8 +119,8 @@ class Tribe {
     this.monkeys.set(monkey.name, monkey);
   }
 
-  setReferee(referee) {
-    this.referee = referee;
+  getMonkey(name) {
+    return this.monkeys.get(name);
   }
 
   setHuman(human) {
@@ -138,13 +133,10 @@ class Tribe {
       if(! monkey.operation) continue;
       monkey.dependencies = monkey.dependencyNames.map(name => this.monkeys.get(name));
     }
-    if(this.referee) {
-      this.referee.dependencies = this.referee.dependencyNames.map(name => this.monkeys.get(name));
-    }
   }
 }
 
-const parseInput = (inputData, refereeName = false, humanName = false) => {
+const parseInput = (inputData, humanName = false) => {
   const monkeyInputRegex = new RegExp(
     '(?<name>[a-z]{4}):\\s((?<number>\\d+)|(?:(?<firstDependencyName>[a-z]{4})\\s(?<operation>[\\+\\-*\\/]) (?<secondDependencyName>[a-z]{4})))');
 
@@ -152,11 +144,7 @@ const parseInput = (inputData, refereeName = false, humanName = false) => {
   for(let line of inputData.split("\n")) {
     const matches = monkeyInputRegex.exec(line).groups;
     const monkeyData = {...matches, dependencyNames: [matches.firstDependencyName, matches.secondDependencyName]};
-    if(refereeName && matches.name === refereeName) {
-      const referee = new Referee(monkeyData);
-      tribe.setReferee(referee);
-    }
-    else if(humanName && matches.name === humanName) {
+    if(humanName && matches.name === humanName) {
       const human = new Human(monkeyData);
       tribe.setHuman(human);
     } else {
@@ -196,15 +184,16 @@ console.log(monkeyRootNumber);
 
 
 // Part 2
-const getMonkeyTribeHumanEquationAnswer = (tribe) => {
-  const refereeCalculations = tribe.referee.dependencies.map((dependency) => calculationToString(dependency.getCalculation()));
+const getMonkeyTribeHumanEquationAnswer = (tribe, refereeName = 'root') => {
+  const refereeCalculations = tribe.getMonkey(refereeName).dependencies.map(
+    (dependency) => calculationToString(dependency.getCalculation()));
   const equation = new Equation(parse(refereeCalculations[0]), parse(refereeCalculations[1]));
   return equation.solveFor(tribe.human.name).numer;
 }
 
-const findHumanNumberFromInput = (inputData) => {
-  const tribe = parseInput(inputData, 'root', 'humn');
-  return getMonkeyTribeHumanEquationAnswer(tribe);
+const findHumanNumberFromInput = (inputData, humanName = 'humn', refereeName = 'root') => {
+  const tribe = parseInput(inputData, humanName);
+  return getMonkeyTribeHumanEquationAnswer(tribe, refereeName);
 }
 
 const answer = findHumanNumberFromInput(inputData);
