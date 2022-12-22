@@ -19,20 +19,6 @@ const performOperation = (value1, value2, operation) => {
   return result;
 }
 
-const calculationToString = (calc) => {
-  if(typeof calc === 'number') return `${calc.toString()}`;
-  const parts = [];
-  for(let component of calc) {
-    if(typeof component === 'number' || typeof component === 'string') {
-      parts.push(component);
-    }
-    else {
-      parts.push(calculationToString(component));
-    }
-  }
-  return `(${parts.join(' ')})`;
-}
-
 class Monkey {
   name;
   number;
@@ -52,6 +38,18 @@ class Monkey {
     this.operation = operation;
   }
 
+  canOperate() {
+    return (this.dependencies[0].number!==null) && (this.dependencies[1].number!==null);
+  }
+  hasOperation() {
+    return !!this.operation;
+  }
+  operate() {
+    let prevNumber = this.number;
+    this.number = performOperation(this.dependencies[0].number, this.dependencies[1].number, this.operation);
+    return prevNumber!==this.number;
+  }
+
   getCalculation() {
     if(this.hasOperation()) {
 
@@ -68,22 +66,10 @@ class Monkey {
         ];
       }
     } else if(this.number) {
-        return this.number;
+      return this.number;
     } else {
       return this.name;
     }
-  }
-
-  canOperate() {
-    return (this.dependencies[0].number!==null) && (this.dependencies[1].number!==null);
-  }
-  hasOperation() {
-    return !!this.operation;
-  }
-  operate() {
-    let prevNumber = this.number;
-    this.number = performOperation(this.dependencies[0].number, this.dependencies[1].number, this.operation);
-    return prevNumber!==this.number;
   }
 }
 
@@ -94,7 +80,6 @@ class Human extends Monkey {
 }
 
 class Tribe {
-
   monkeys;
   human;
 
@@ -133,7 +118,7 @@ class Tribe {
 
 const parseInput = (inputData, humanName = false) => {
   const monkeyInputRegex = new RegExp(
-    '(?<name>[a-z]{4}):\\s((?<number>\\d+)|(?:(?<firstDependencyName>[a-z]{4})\\s(?<operation>[\\+\\-*\\/]) (?<secondDependencyName>[a-z]{4})))');
+    '(?<name>[a-z]{4}):\\s((?<number>\\d+)|(?<firstDependencyName>[a-z]{4})\\s(?<operation>[\+\\-*\/]) (?<secondDependencyName>[a-z]{4}))');
 
   const tribe = new Tribe();
   for(let line of inputData.split("\n")) {
