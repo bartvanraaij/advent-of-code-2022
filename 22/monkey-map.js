@@ -12,12 +12,8 @@ const parseInput = (inputData) => {
     } else {
       return parseInt(regexMatchArr[0], 10);
     }
-    // if(regexMatchArr.groups.rotate) {
-    //   return ''
-    // }
-    // return [parseInt(regexMatchArr[1], 10), regexMatchArr[2]];
   });
-  const grid = []; // let's to Y,X again, top to bottom, left to right
+  const grid = []; // let's do Y,X again, top to bottom, left to right
   let maxX = 0;
   for(let line of map.split("\n")) {
     if((line.length-1) > maxX) maxX = line.length-1;
