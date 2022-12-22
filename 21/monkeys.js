@@ -176,7 +176,7 @@ const solveEquation = (first, second, variableToFind = 'humn') => {
   let nextEquation;
   if(typeof leftHandSide === 'number') {
     number = leftHandSide;
-    nextEquation = rightHandSide
+    nextEquation = rightHandSide;
     numberSide = 'left';
   } else {
     number = rightHandSide;
