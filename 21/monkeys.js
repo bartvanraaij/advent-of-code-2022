@@ -1,5 +1,4 @@
 const fs = require('fs');
-const {Equation, parse} = require("algebra.js");
 const sampleData = fs.readFileSync('sample.txt', 'utf8');
 const inputData = fs.readFileSync('input.txt', 'utf8');
 
@@ -182,14 +181,55 @@ const findMonkeysNumberFromInput = (inputData, monkeyNumberToFind) => {
 const monkeyRootNumber = findMonkeysNumberFromInput(inputData, 'root');
 console.log(monkeyRootNumber);
 
-
 // Part 2
+const getOppositeOperation = (op) => {
+  if(op ==='+') return '-';
+  if(op ==='-') return '+';
+  if(op ==='*') return '/';
+  if(op ==='/') return '*';
+}
+
+const solveEquation = (first, second, variableToFind = 'humn') => {
+
+  const currentSolution = (typeof first === 'number') ? first : second;
+  let otherSide = (typeof first === 'number') ? second : first;
+
+  if(otherSide===variableToFind) {
+    return currentSolution;
+  }
+
+  let [leftHandSide, operation, rightHandSide] = otherSide;
+
+  let numberSide;
+  let number;
+  let nextEquation;
+  if(typeof leftHandSide === 'number') {
+    number = leftHandSide;
+    nextEquation = rightHandSide
+    numberSide = 'left';
+  } else {
+    number = rightHandSide;
+    nextEquation = leftHandSide;
+    numberSide = 'right';
+  }
+
+  let newSolution;
+  if(operation === '-') {
+    if(numberSide === 'left') {
+      newSolution = Math.abs(performOperation(currentSolution, number, '-'));
+    } else {
+      newSolution = performOperation(currentSolution, number, '+');
+    }
+  }
+  else {
+    newSolution = performOperation(currentSolution, number, getOppositeOperation(operation));
+  }
+  return solveEquation(newSolution, nextEquation);
+}
+
 const getMonkeyTribeHumanEquationAnswer = (tribe, refereeName = 'root') => {
-  const refereeCalculations = tribe.getMonkey(refereeName).dependencies.map(
-    (dependency) => calculationToString(dependency.getCalculation())
-  );
-  const equation = new Equation(parse(refereeCalculations[0]), parse(refereeCalculations[1]));
-  return equation.solveFor(tribe.human.name).numer;
+  const refereeCalculations = tribe.getMonkey(refereeName).dependencies.map((d) => d.getCalculation());
+  return solveEquation(...refereeCalculations, tribe.human.name);
 }
 
 const findHumanNumberFromInput = (inputData, humanName = 'humn', refereeName = 'root') => {
