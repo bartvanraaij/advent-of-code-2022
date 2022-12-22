@@ -2,10 +2,6 @@ const fs = require('fs');
 const sampleData = fs.readFileSync('sample.txt', 'utf8');
 const inputData = fs.readFileSync('input.txt', 'utf8');
 
-String.prototype.toInt = function () {
-  return parseInt(this,10);
-}
-
 const performOperation = (value1, value2, operation) => {
   let result;
   if(operation === '+') {
@@ -47,7 +43,7 @@ class Monkey {
   constructor({name, number, dependencyNames, operation}) {
     this.name = name;
     if(typeof number === 'string') {
-      this.number = number.toInt();
+      this.number = parseInt(number,10);
     }
     else {
       this.number = number ?? null;
