@@ -2,21 +2,11 @@ const fs = require('fs');
 const sampleData = fs.readFileSync('sample.txt', 'utf8');
 const inputData = fs.readFileSync('input.txt', 'utf8');
 
-const performOperation = (value1, value2, operation) => {
-  let result;
-  if(operation === '+') {
-    result = value1+value2;
-  }
-  if(operation === '-') {
-    result = value1-value2;
-  }
-  if(operation === '*') {
-    result = value1*value2;
-  }
-  if(operation === '/') {
-    result = value1/value2;
-  }
-  return result;
+const performOperation = (a, b, op) => {
+  if(op === '+') return a+b;
+  if(op === '-') return a-b;
+  if(op === '*') return a*b;
+  if(op === '/') return a/b;
 }
 
 class Monkey {
