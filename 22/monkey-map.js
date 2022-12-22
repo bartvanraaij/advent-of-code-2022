@@ -1,6 +1,5 @@
 const fs = require('fs');
 const sampleData = fs.readFileSync('sample.txt', 'utf8');
-const sampleData2 = fs.readFileSync('sample2.txt', 'utf8');
 const inputData = fs.readFileSync('input.txt', 'utf8');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -26,6 +25,7 @@ const parseInput = (inputData) => {
     }
     grid.push(row);
   }
+  console.log(maxX);
   return {grid,instructions};
 }
 
@@ -201,16 +201,11 @@ const determinePassword = (position, direction) => {
   return rowScore + colScore + directionScore;
 }
 
-// draw(sampleData);
 const getPasswordFromInput = (inputData) => {
   const [endPosition, endDirection] = getEndState(inputData);
   return determinePassword(endPosition, endDirection);
 };
 
-// const {grid, instructions} = parseInput(sampleData);
-// console.log(instructions);
-// drawGrid(grid);
-//
 // draw(sampleData).then(([p,d]) => {
 //   console.log(determinePassword(p, d));
 // });
