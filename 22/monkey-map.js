@@ -39,20 +39,20 @@ const parseInput = (inputData, mode='flat') => {
       for (let x = 0; x < grid[y].length; x++) {
         if (grid[y][x] !== ' ') {
 
-          const [cubeSideY, cubeSideX] = realYXtoYxOnCubeSide([y, x], cubeSize);
+          const [faceY, faceX] = YXtoRelativeYXOnFace([y, x], cubeSize);
 
-          const cubeSideName = realYXtoCubeSideName([y, x], cubeSize);
+          const faceName = YXToFaceName([y, x], cubeSize);
 
-          let cubeSide;
-          if (!cube.has(cubeSideName)) {
-            cubeSide = [];
-            cube.set(cubeSideName, cubeSide);
+          let face;
+          if (!cube.has(faceName)) {
+            face = [];
+            cube.set(faceName, face);
           } else {
-            cubeSide = cube.get(cubeSideName);
+            face = cube.get(faceName);
           }
 
-          if (!cubeSide[cubeSideY]) cubeSide[cubeSideY] = [];
-          cubeSide[cubeSideY][cubeSideX] = grid[y][x];
+          if (!face[faceY]) face[faceY] = [];
+          face[faceY][faceX] = grid[y][x];
         }
 
       }
@@ -61,20 +61,20 @@ const parseInput = (inputData, mode='flat') => {
   return {grid,instructions,cubeSize };
 }
 
-const realYXtoCubeSideName = ([y,x], cubeSize) => {
+const YXToFaceName = ([y,x], cubeSize) => {
   const quadrantX = Math.floor((x)/cubeSize);
   const quadrantY = Math.floor( (y)/cubeSize);
   return `${quadrantY}.${quadrantX}`;
 }
 
-const realYXtoYxOnCubeSide = ([y,x], cubeSize) => {
+const YXtoRelativeYXOnFace = ([y,x], cubeSize) => {
   return [(y)%cubeSize,(x)%cubeSize];
 }
 
-const cubeSideYXToRealYX = ([y,x], cubeSideName, cubeSize) => {
-  const [cubeSideY,cubeSideX] = csNameYX(cubeSideName);
-  const realX =  ((cubeSideX*(cubeSize))+x);
-  const realY =((cubeSideY*cubeSize))+y;
+const relativeYXOnFaceToYX = ([y,x], faceName, cubeSize) => {
+  const [faceY,faceX] = faceNameYX(faceName);
+  const realX =  ((faceX*(cubeSize))+x);
+  const realY =((faceY*cubeSize))+y;
   return [realY, realX];
 }
 
@@ -212,145 +212,83 @@ const getNewDirection = (curr, rotate) => {
 const directions = ['>','v','<','^'];
 
 const findNextPositionFromCubeEdge = ([y,x], direction, cubeSize) => {
-  const [yOnCubeSide, xOnCubeSide] = realYXtoYxOnCubeSide([y,x], cubeSize);
-  const cubeSideName = realYXtoCubeSideName([y,x], cubeSize);
+  const [relativeY, relativeX] = YXtoRelativeYXOnFace([y,x], cubeSize);
+  const cubeFace = YXToFaceName([y,x], cubeSize);
   const maxXY = (cubeSize-1);
-
-  let newCubeSide, newDirection, newYOnCubeSide, newXOnCubeSide;
+  let nextPositionMap;
 
   if(cubeSize === 4) {
-    if(cubeSideName==='0.2') {
-      if(direction==='>') {
-        newCubeSide = '2.3'; newDirection = '<'; newYOnCubeSide = flipPos(yOnCubeSide, cubeSize); newXOnCubeSide = (cubeSize-1);
-        return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
-      }
-      if(direction==='^') {
-        newCubeSide = '1.0'; newDirection = 'v'; newXOnCubeSide = flipPos(xOnCubeSide, cubeSize); newYOnCubeSide = 0;
-      }
-      if(direction==='<') {
-        newCubeSide = '1.1'; newDirection = 'v'; newXOnCubeSide = flipPos(yOnCubeSide, cubeSize); newYOnCubeSide = 0;
-      }
-    }
-    if(cubeSideName==='1.0') {
-      if(direction==='<') {
-        newCubeSide = '2.3'; newDirection = '<^'; newYOnCubeSide = (cubeSize-1); newXOnCubeSide = flipPos(xOnCubeSide, cubeSize);
-      }
-      if(direction==='^') {
-        newCubeSide = '0.2'; newDirection = 'v'; newXOnCubeSide = flipPos(xOnCubeSide, cubeSize); newYOnCubeSide = 0;
-      }
-      if(direction==='v') {
-        newCubeSide = '2.2'; newDirection = '^'; newXOnCubeSide = flipPos(xOnCubeSide, cubeSize); newYOnCubeSide = cubeSize;
-      }
-    }
-    if(cubeSideName==='1.1') {
-      if(direction==='^') {
-        newCubeSide = '0.2'; newDirection = '>'; newXOnCubeSide = 0; newYOnCubeSide = xOnCubeSide;
-      }
-      if(direction==='v') {
-        newCubeSide = '2.2'; newDirection = '>'; newXOnCubeSide = (cubeSize-1); newYOnCubeSide = flipPos(xOnCubeSide, cubeSize);
-      }
-    }
-    if(cubeSideName==='1.2') {
-      if(direction==='>') {
-        newCubeSide = '2.3'; newDirection = 'v'; newXOnCubeSide = flipPos(yOnCubeSide, cubeSize); newYOnCubeSide = 0;
-      }
-    }
-    if(cubeSideName==='2.2') {
-      if(direction==='<') {
-        newCubeSide = '1.1'; newDirection = '^'; newXOnCubeSide = flipPos(yOnCubeSide, cubeSize); newYOnCubeSide = (cubeSize-1);
-      }
-      if(direction==='v') {
-        newCubeSide = '1.0'; newDirection = '^'; newXOnCubeSide = flipPos(xOnCubeSide, cubeSize); newYOnCubeSide = (cubeSize-1);
-      }
-    }
-    if(cubeSideName==='2.3') {
-      if(direction==='^') {
-        newCubeSide = '1.2'; newDirection = '<'; newXOnCubeSide = (cubeSize-1); newYOnCubeSide = flipPos(xOnCubeSide, cubeSize);
-      }
-      if(direction==='>') {
-        newCubeSide = '0.2'; newDirection = '<'; newXOnCubeSide = flipPos(xOnCubeSide, cubeSize); newYOnCubeSide = (cubeSize-1);
-      }
-      if(direction==='v') {
-        newCubeSide = '1.0'; newDirection = '>'; newXOnCubeSide = 0; newYOnCubeSide = flipPos(xOnCubeSide, cubeSize);
-      }
+    nextPositionMap = {
+      '0.2': {
+        '>': ['2.3', '<', flipPos(relativeY, cubeSize), maxXY],
+        '^': ['1.0', 'v', 0, flipPos(relativeX, cubeSize)],
+        '<': ['1.1', 'v', 0, flipPos(relativeY, cubeSize)],
+      },
+      '1.0': {
+        '<': ['2.3', '<', maxXY, flipPos(relativeX, cubeSize)],
+        '^': ['0.2', 'v', 0, flipPos(relativeX, cubeSize)],
+        'v': ['2.2', '^', maxXY, flipPos(relativeX, cubeSize)],
+      },
+      '1.1': {
+        '^': ['0.2', '>', relativeX, 0],
+        'v': ['2.2', '>', flipPos(relativeX, cubeSize), maxXY]
+      },
+      '1.2': {
+        '>': ['2.3', 'v', 0, flipPos(relativeY, cubeSize)],
+      },
+      '2.2': {
+        '<': ['1.1', '^', maxXY, flipPos(relativeY, cubeSize)],
+        'v': ['1.0', '^', maxXY, flipPos(relativeX, cubeSize)],
+      },
+      '2.3': {
+        '^': ['1.2', '<', flipPos(relativeX, cubeSize), maxXY],
+        '>': ['0.2', '<', maxXY, flipPos(relativeX, cubeSize)],
+        'v': ['1.0', '>', flipPos(relativeX, cubeSize), 0],
+      },
     }
   }
   else {
-    // const nextPosMap = {
-    //   '0.1': {
-    //     '^': ['3.0', '>', xOnCubeSide, 0],
-    //     '<': ['2.0', '>', 0, flipPos(yOnCubeSide, cubeSize)],
-    //   },
-    //   '0.2': {
-    //     '^': ['3.0', '^', maxXY, xOnCubeSide],
-    //     '>': ['2.1', '<', flipPos(yOnCubeSide, cubeSize), maxXY],
-    //   },
-    // }
-    if(cubeSideName==='0.1') {
-      if(direction==='^') {
-        newCubeSide = '3.0'; newDirection = '>'; newYOnCubeSide = xOnCubeSide; newXOnCubeSide = 0;
-      }
-      if(direction==='<') {
-        newCubeSide = '2.0'; newDirection = '>'; newXOnCubeSide = 0; newYOnCubeSide = flipPos(yOnCubeSide, cubeSize);
-      }
-    }
-    if(cubeSideName==='0.2') {
-      if(direction==='^') {
-        newCubeSide = '3.0'; newDirection = '^'; newYOnCubeSide = maxXY; newXOnCubeSide = xOnCubeSide;
-      }
-      if(direction==='>') {
-        newCubeSide = '2.1'; newDirection = '<'; newXOnCubeSide = maxXY; newYOnCubeSide = flipPos(yOnCubeSide, cubeSize);
-      }
-      if(direction==='v') {
-        newCubeSide = '1.1'; newDirection = '<'; newXOnCubeSide = maxXY; newYOnCubeSide = xOnCubeSide;
-      }
-    }
-    if(cubeSideName==='1.1') {
-      if(direction==='>') {
-        newCubeSide = '0.2'; newDirection = '^'; newYOnCubeSide = maxXY; newXOnCubeSide = yOnCubeSide;
-      }
-      if(direction==='<') {
-        newCubeSide = '2.0'; newDirection = 'v'; newXOnCubeSide = yOnCubeSide; newYOnCubeSide = 0;
-      }
-    }
-    if(cubeSideName==='2.1') {
-      if(direction==='v') {
-        newCubeSide = '3.0'; newDirection = '<'; newYOnCubeSide = xOnCubeSide; newXOnCubeSide = maxXY;
-      }
-      if(direction==='>') {
-        newCubeSide = '0.2'; newDirection = '<'; newYOnCubeSide = flipPos(yOnCubeSide, cubeSize); newXOnCubeSide = cubeSize-1;
-      }
-    }
-    if(cubeSideName==='2.0') {
-      if(direction==='^') {
-        newCubeSide = '1.1'; newDirection = '>'; newYOnCubeSide = xOnCubeSide; newXOnCubeSide = 0;
-      }
-      if(direction==='<') {
-        newCubeSide = '0.1'; newDirection = '>'; newYOnCubeSide = flipPos(yOnCubeSide, cubeSize); newXOnCubeSide = 0;
-      }
-    }
-    if(cubeSideName==='3.0') {
-      if(direction==='<') {
-        newCubeSide = '0.1'; newDirection = 'v'; newYOnCubeSide = 0; newXOnCubeSide = yOnCubeSide;
-      }
-      if(direction==='v') {
-        newCubeSide = '0.2'; newDirection = 'v'; newYOnCubeSide = 0;newXOnCubeSide = xOnCubeSide;
-      }
-      if(direction==='>') {
-        newCubeSide = '2.1'; newDirection = '^'; newYOnCubeSide = maxXY; newXOnCubeSide = yOnCubeSide;
-      }
+    nextPositionMap = {
+      '0.1': {
+        '^': ['3.0', '>', relativeX, 0],
+        '<': ['2.0', '>', flipPos(relativeY, cubeSize), 0],
+      },
+      '0.2': {
+        '^': ['3.0', '^', maxXY, relativeX],
+        '>': ['2.1', '<', flipPos(relativeY, cubeSize), maxXY],
+        'v': ['1.1', '<', relativeX, maxXY],
+      },
+      '1.1': {
+        '>': ['0.2', '^', maxXY, relativeY],
+        '<': ['2.0', 'v', 0, relativeY],
+      },
+      '2.1': {
+        'v': ['3.0', '<', relativeX, maxXY],
+        '>': ['0.2', '<', flipPos(relativeY, cubeSize), maxXY],
+      },
+      '2.0': {
+        '^': ['1.1', '>', relativeX, 0],
+        '<': ['0.1', '>', flipPos(relativeY, cubeSize), 0],
+      },
+      '3.0': {
+        '<': ['0.1', 'v', 0, relativeY],
+        'v': ['0.2', 'v', 0, relativeX],
+        '>': ['2.1', '^', maxXY, relativeY],
+      },
     }
   }
 
-  if(newYOnCubeSide === undefined) {
+  const [newCubeFace, newDirection, newRelativeY, newRelativeX] = nextPositionMap[cubeFace][direction];
+
+  if(newRelativeY === undefined) {
     throw new Error('Unsupported coordinates');
   }
 
-  const newRealYX = cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize);
+  const newRealYX = relativeYXOnFaceToYX([newRelativeY,newRelativeX], newCubeFace, cubeSize);
   return [newRealYX, newDirection];
 }
 
-const csNameYX = (cubeSideName) => cubeSideName.split('.').map((str) => parseInt(str, 10));
+const faceNameYX = (faceName) => faceName.split('.').map((str) => parseInt(str, 10));
 const flipPos = (num, cubeSize) => {
   return Math.abs(-num + (cubeSize-1));
 }
