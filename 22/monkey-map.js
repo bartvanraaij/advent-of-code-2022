@@ -25,8 +25,60 @@ const parseInput = (inputData) => {
     }
     grid.push(row);
   }
-  console.log(maxX);
-  return {grid,instructions};
+
+  const ySize = grid.length;
+  const xSize = maxX+1;
+  const cubeLayout = xSize > ySize ? 'horizontal':'vertical';
+  const cubeSize = cubeLayout === 'horizontal' ? ((xSize)/4) : (ySize/4);
+
+  const cube = new Map();
+  for(let y = 0; y<grid.length; y++) {
+
+    for(let x=0; x<grid[y].length; x++) {
+      if(grid[y][x] !== ' ') {
+
+        const [cubeSideY,cubeSideX] = realYXtoYxOnCubeSide([y,x], cubeSize);
+
+        const cubeSideName = realYXtoCubeSideName([y,x], cubeSize);
+
+        let cubeSide;
+        if(! cube.has(cubeSideName)) {
+          cubeSide = [];
+          cube.set(cubeSideName, cubeSide);
+        } else {
+          cubeSide = cube.get(cubeSideName);
+        }
+
+        if(! cubeSide[cubeSideY]) cubeSide[cubeSideY] = [];
+        cubeSide[cubeSideY][cubeSideX] = grid[y][x];
+      }
+
+    }
+  }
+
+  return {grid,instructions,cubeSize};
+}
+
+const realYXtoCubeSideYX = ([y,x], cubeSize) => {
+  const quadrantX = Math.floor((x)/cubeSize);
+  const quadrantY = Math.floor( (y)/cubeSize);
+  return [quadrantY,quadrantX];
+}
+const realYXtoCubeSideName = ([y,x], cubeSize) => {
+  const quadrantX = Math.floor((x)/cubeSize);
+  const quadrantY = Math.floor( (y)/cubeSize);
+  return `${quadrantY}.${quadrantX}`;
+}
+
+const realYXtoYxOnCubeSide = ([y,x], cubeSize) => {
+  return [(y)%cubeSize,(x)%cubeSize];
+}
+
+const cubeSideYXToRealYX = ([y,x], cubeSideName, cubeSize) => {
+  const [cubeSideY,cubeSideX] = csNameYX(cubeSideName);
+  const realX =  ((cubeSideX*(cubeSize))+x);
+  const realY =((cubeSideY*cubeSize))+y;
+  return [realY, realX];
 }
 
 const windowSize = process.stdout.getWindowSize();
@@ -35,6 +87,7 @@ const wY = windowSize[1];
 
 const drawGrid = (grid) => {
   console.clear();
+  process.stdout.write('\u001B[?25l');//hide cursor
   for(let y=0; y<grid.length; y++) {
     for(let x=0; x<grid[y].length; x++) {
       if(x < wX && y< (wY-5)) {
@@ -46,14 +99,26 @@ const drawGrid = (grid) => {
   }
   process.stdout.cursorTo(0,process.stdout.getWindowSize()[1]);
 };
+const drawGridSync = (grid) => {
+  for(let y=0; y<grid.length; y++) {
+    for(let x=0; x<grid[y].length; x++) {
+      if(x < wX && y< (wY-5)) {
+        process.stdout.write(grid[y][x]);
+      }
+    }
+    process.stdout.write('\n');
+  }
+  process.stdout.write('\n');
+};
+
 const drawCharAtPos = ([y,x], char) => {
   if(x < wX && y< wY) {
     process.stdout.cursorTo(x, y);
     process.stdout.write(char);
   }
 }
-const drawText = (text) => {
-  process.stdout.cursorTo(0, wY);
+const drawText = (text, bottomPad=0) => {
+  process.stdout.cursorTo(0, wY-bottomPad);
   process.stdout.write(text.padEnd(wX-5, ' '));
 }
 
@@ -158,6 +223,7 @@ const draw = async (inputData) => {
     if(inst === 'R'||inst === 'L') {
       drawText(`Rotating ${inst}`);
       direction = getNewDirection(direction, inst);
+      await delay(150);
     } else {
       drawText(`Moving ${inst} ${direction}: ${'0'.padStart(2, ' ')}/${inst}`);
       let c = 0;
@@ -169,8 +235,7 @@ const draw = async (inputData) => {
         c++;
       }
     }
-    // drawText(`Blocked at ${currentPosition.join(',')}`);
-    await delay(500);
+    await delay(150);
     drawCharAtPos(currentPosition, direction);
   }
   process.stdout.cursorTo(...process.stdout.getWindowSize());
@@ -211,3 +276,370 @@ const getPasswordFromInput = (inputData) => {
 // });
 const password = getPasswordFromInput(inputData);
 console.log(password);
+
+
+// Part 2
+const getNextPosition2 = ([cY,cX, direction], grid, cubeSize, data = 'input') => {
+  let nY, nX;
+  let nD = direction;
+
+  if (direction === '>') {
+    nY = cY;
+    nX = cX + 1;
+  }
+  if (direction === '<') {
+    nY = cY;
+    nX = cX - 1;
+  }
+  if (direction === '^') {
+    nY = cY-1;
+    nX = cX;
+  }
+  if (direction === 'v') {
+    nY = cY+1;
+    nX = cX;
+  }
+  if (isVoid([nY, nX], grid)) {
+    if(data === 'sample') {
+      [[nY, nX], nD] = findNextPositionFromCubeEdgeSampleData([cY, cX], direction,  cubeSize);
+    } else {
+      [[nY, nX], nD] = findNextPositionFromCubeEdgeInputData([cY, cX], direction,  cubeSize);
+    }
+  }
+
+  if (isBlocked([nY, nX], grid)) {
+    return false;
+  }
+
+  return [nY, nX, nD];
+}
+
+
+function* getNextPositions2(currentPos, numSteps, direction, grid, cubeSize) {
+  // let workingPos = currentPos;
+  let workingPos = [...currentPos, direction];
+  for(let s=0;s<numSteps; s++) {
+    let newPos = getNextPosition2(workingPos, grid, cubeSize);
+    if(newPos === false) return;//Blocked
+    workingPos = newPos;
+    yield newPos;
+  }
+}
+
+const csNameYX = (cubeSideName) => cubeSideName.split('.').map((str) => parseInt(str, 10));
+
+const flipPos = (num, cubeSize) => {
+
+  return Math.abs(-num + (cubeSize-1));
+}
+
+const findNextPositionFromCubeEdgeSampleData = ([y,x], direction, cubeSize) => {
+  // const [cubeSideY, cubeSideX] = realYXtoCubeSideYX([y,x], cubeSize);
+  const [yOnCubeSide, xOnCubeSide] = realYXtoYxOnCubeSide([y,x], cubeSize);
+  // const [cubeY,cubeX] = csNameYX(cubeSideName);
+  const cubeSideName = realYXtoCubeSideName([y,x], cubeSize);
+
+  if(cubeSideName==='0.2') {
+    if(direction==='>') {
+      let newCubeSide = '2.3'
+      let newDirection = '<';
+      let newYOnCubeSide = flipPos(yOnCubeSide, cubeSize);
+      let newXOnCubeSide = (cubeSize-1);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='^') {
+      let newCubeSide = '1.0'
+      let newDirection = 'v';
+      let newXOnCubeSide = flipPos(xOnCubeSide, cubeSize);
+      let newYOnCubeSide = 0;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='<') {
+      let newCubeSide = '1.1'
+      let newDirection = 'v';
+      let newXOnCubeSide = flipPos(yOnCubeSide, cubeSize);
+      let newYOnCubeSide = 0;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='1.0') {
+    if(direction==='<') {
+      let newCubeSide = '2.3'
+      let newDirection = '<^';
+      let newYOnCubeSide = (cubeSize-1);
+      let newXOnCubeSide = flipPos(xOnCubeSide, cubeSize);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='^') {
+      let newCubeSide = '0.2'
+      let newDirection = 'v';
+      let newXOnCubeSide = flipPos(xOnCubeSide, cubeSize);
+      let newYOnCubeSide = 0;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='v') {
+      let newCubeSide = '2.2'
+      let newDirection = '^';
+      let newXOnCubeSide = flipPos(xOnCubeSide, cubeSize);
+      let newYOnCubeSide = cubeSize;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='1.1') {
+    if(direction==='^') {
+      let newCubeSide = '0.2'
+      let newDirection = '>';
+      let newXOnCubeSide = 0;
+      let newYOnCubeSide = xOnCubeSide;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='v') {
+      let newCubeSide = '2.2'
+      let newDirection = '>';
+      let newXOnCubeSide = (cubeSize-1);
+      let newYOnCubeSide = flipPos(xOnCubeSide, cubeSize);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='1.2') {
+    if(direction==='>') {
+      let newCubeSide = '2.3'
+      let newDirection = 'v';
+      let newXOnCubeSide = flipPos(yOnCubeSide, cubeSize);
+      let newYOnCubeSide = 0;
+      let [ry,rx] = cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide],newCubeSide, cubeSize);
+      return [[ry,rx], newDirection];
+    }
+  }
+  if(cubeSideName==='2.2') {
+    if(direction==='<') {
+      let newCubeSide = '1.1'
+      let newDirection = '^';
+      let newXOnCubeSide = flipPos(yOnCubeSide, cubeSize);
+      let newYOnCubeSide = (cubeSize-1);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='v') {
+      let newCubeSide = '1.0'
+      let newDirection = '^';
+      let newXOnCubeSide = flipPos(xOnCubeSide, cubeSize);
+      let newYOnCubeSide = (cubeSize-1);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='2.3') {
+    if(direction==='^') {
+      let newCubeSide = '1.2'
+      let newDirection = '<';
+      let newXOnCubeSide = (cubeSize-1);
+      let newYOnCubeSide = flipPos(xOnCubeSide, cubeSize);;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='>') {
+      let newCubeSide = '0.2'
+      let newDirection = '<';
+      let newXOnCubeSide = flipPos(xOnCubeSide, cubeSize);
+      let newYOnCubeSide = (cubeSize-1);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='v') {
+      let newCubeSide = '1.0'
+      let newDirection = '>';
+      let newXOnCubeSide = 0;
+      let newYOnCubeSide = flipPos(xOnCubeSide, cubeSize);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+
+  console.log({y,x, direction, cubeSize});
+  throw new Error('Unsupported');
+
+}
+
+const findNextPositionFromCubeEdgeInputData = ([y,x], direction, cubeSize) => {
+  // const [cubeSideY, cubeSideX] = realYXtoCubeSideYX([y,x], cubeSize);
+  const [yOnCubeSide, xOnCubeSide] = realYXtoYxOnCubeSide([y,x], cubeSize);
+  // const [cubeY,cubeX] = csNameYX(cubeSideName);
+  const cubeSideName = realYXtoCubeSideName([y,x], cubeSize);
+  if(cubeSideName==='0.1') {
+    if(direction==='^') {
+      let newCubeSide = '3.0'
+      let newDirection = '>';
+      let newYOnCubeSide = xOnCubeSide;
+      let newXOnCubeSide = 0;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='<') {
+      let newCubeSide = '2.0'
+      let newDirection = '>';
+      let newXOnCubeSide = 0;
+      let newYOnCubeSide = flipPos(yOnCubeSide, cubeSize);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='0.2') {
+    if(direction==='^') {
+      let newCubeSide = '3.0'
+      let newDirection = '^';
+      let newYOnCubeSide = (cubeSize-1);
+      let newXOnCubeSide = xOnCubeSide;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='>') {
+      let newCubeSide = '2.1'
+      let newDirection = '<';
+      let newXOnCubeSide = (cubeSize-1);
+      let newYOnCubeSide = flipPos(yOnCubeSide, cubeSize);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='v') {
+      let newCubeSide = '1.1'
+      let newDirection = '<';
+      let newXOnCubeSide = (cubeSize-1);
+      let newYOnCubeSide = xOnCubeSide;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='1.1') {
+    if(direction==='>') {
+      let newCubeSide = '0.2'
+      let newDirection = '^';
+      let newYOnCubeSide = (cubeSize-1);
+      let newXOnCubeSide = yOnCubeSide;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='<') {
+      let newCubeSide = '2.0'
+      let newDirection = 'v';
+      let newXOnCubeSide = yOnCubeSide;
+      let newYOnCubeSide = 0;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='2.1') {
+    if(direction==='v') {
+      let newCubeSide = '3.0'
+      let newDirection = '<';
+      let newYOnCubeSide = xOnCubeSide;
+      let newXOnCubeSide = (cubeSize-1);
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='>') {
+      let newCubeSide = '0.2'
+      let newDirection = '<';
+      let newYOnCubeSide = flipPos(yOnCubeSide, cubeSize);
+      let newXOnCubeSide = cubeSize-1;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='2.0') {
+    if(direction==='^') {
+      let newCubeSide = '1.1'
+      let newDirection = '>';
+      let newYOnCubeSide = xOnCubeSide;
+      let newXOnCubeSide = 0;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='<') {
+      let newCubeSide = '0.1'
+      let newDirection = '>';
+      let newYOnCubeSide = flipPos(yOnCubeSide, cubeSize);
+      let newXOnCubeSide = 0;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+  if(cubeSideName==='3.0') {
+    if(direction==='<') {
+      let newCubeSide = '0.1'
+      let newDirection = 'v';
+      let newYOnCubeSide = 0;
+      let newXOnCubeSide = yOnCubeSide;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='v') {
+      let newCubeSide = '0.2'
+      let newDirection = 'v';
+      let newYOnCubeSide = 0;
+      let newXOnCubeSide = xOnCubeSide;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+    if(direction==='>') {
+      let newCubeSide = '2.1'
+      let newDirection = '^';
+      let newYOnCubeSide = (cubeSize-1);
+      let newXOnCubeSide = yOnCubeSide;
+      return [cubeSideYXToRealYX([newYOnCubeSide,newXOnCubeSide], newCubeSide, cubeSize), newDirection];
+    }
+  }
+
+  console.trace();
+  console.log({y,x, cubeSideName,direction,  cubeSize});
+  throw new Error('unsupported');
+
+}
+
+
+const draw2 = async (inputData) => {
+  const {grid, instructions, cubeSize} = parseInput(inputData);
+  let currentPosition = findStartingPosition(grid);
+  let direction = '>';
+  console.clear();
+  drawGrid(grid);
+  // drawCharAtPos(currentPosition, '@');
+  drawCharAtPos(currentPosition, direction);
+  for (let inst of instructions) {
+
+    if(inst === 'R'||inst === 'L') {
+      drawText(`Rotating ${inst}`);
+      direction = getNewDirection(direction, inst);
+      await delay(150);
+    } else {
+      drawText(`Moving ${inst} ${direction}: ${'0'.padStart(2, ' ')}/${inst}`);
+      let c = 0;
+      for(let [nY,nX,nD] of getNextPositions2(currentPosition, inst, direction, grid, cubeSize)) {
+        drawText(`Moving ${inst} ${direction}: ${c.toString(10).padStart(2, ' ')}/${inst}`);
+        drawText(`Current position: ${nY},${nX}`, 1);
+        drawCharAtPos([nY,nX], `\x1b[1m\x1b[32m${nD}\x1b[0m`);
+        currentPosition = [nY,nX];
+        // drawCharAtPos([nY,nX], nD);
+
+        // process.stdout.write(`\x1b[1m\x1b[32mo\x1b[0m`);
+
+        direction = nD;
+        await delay(100);
+        c++;
+      }
+    }
+    await delay(150);
+    // drawCharAtPos(currentPosition, direction);
+    drawCharAtPos(currentPosition, `\x1b[1m\x1b[32m${direction}\x1b[0m`);
+  }
+  process.stdout.cursorTo(...process.stdout.getWindowSize());
+  return [currentPosition, direction];
+}
+
+const getEndState2 = (inputData) => {
+  const {grid, instructions, cubeSize} = parseInput(inputData);
+  let currentPosition = findStartingPosition(grid);
+  let direction = '>';
+  for (let inst of instructions) {
+    if(inst === 'R'||inst === 'L') {
+      direction = getNewDirection(direction, inst);
+    } else {
+      for(let [nY,nX,nD] of getNextPositions2(currentPosition, inst, direction, grid, cubeSize)) {
+        currentPosition = [nY,nX];
+        direction = nD;
+      }
+    }
+  }
+  return [currentPosition, direction];
+}
+
+
+const getPasswordFromInput2 = (inputData) => {
+  const [endPosition, endDirection] = getEndState2(inputData);
+  return determinePassword(endPosition, endDirection);
+};
+
+const p2 = getPasswordFromInput2(inputData);
+console.log(p2);
