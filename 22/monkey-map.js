@@ -367,3 +367,7 @@ console.log(finalPassword);
 //   const password = determinePassword(p, d);
 //   drawText(`Password: \x1b[1m\x1b[32m${password.toString(10)}\x1b[0m`,2);
 // });
+// draw(sampleData, 'flat').then(([p,d]) => {
+//   const password = determinePassword(p, d);
+//   drawText(`Password: \x1b[1m\x1b[32m${password.toString(10)}\x1b[0m`,2);
+// });
