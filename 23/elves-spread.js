@@ -33,30 +33,31 @@ class Troupe {
   directionOrder;
 
   allOccupiedPositions;
-  allPositionsXY;
-  doublePositions;
+  allOccupiedPositionsPositionsYX;
+  allDuplicateProposedPositionsYX;
 
   constructor() {
     this.elves = new Set();
     this.directionOrder = ['n','s','w','e'];
   }
 
-  captureState() {
+  captureAllOccupiedPositions() {
     const elves = [...this.elves.values()];
     this.allOccupiedPositions = elves.map(elf => elf.currentPosition);
-    this.allPositionsXY = this.allOccupiedPositions.map(yxCoord);
+    this.allOccupiedPositionsPositionsYX = this.allOccupiedPositions.map(yxCoord);
   }
-  captureProposeState() {
-    this.doublePositions = [];
-    const allProposedPositions = [];
-    for(let elf of this.elves) {
-      if(elf.proposedNewPosition===null) continue;
-      let wantedPos = yxCoord(elf.proposedNewPosition);
-      if(allProposedPositions.includes(wantedPos)) {
-        this.doublePositions.push(wantedPos);
+  captureDuplicateProposals() {
+    const allProposedPositions = [...this.elves.values()]
+      .filter(e => e.proposedNewPosition!==null)
+      .map(elf => yxCoord(elf.proposedNewPosition)).sort(); // You can define the comparing function here.
+
+    let duplicates = [];
+    for (let i = 0; i < allProposedPositions.length - 1; i++) {
+      if (allProposedPositions[i + 1] === allProposedPositions[i]) {
+        duplicates.push(allProposedPositions[i]);
       }
-      allProposedPositions.push(wantedPos);
     }
+    this.allDuplicateProposedPositionsYX = duplicates;
   }
   addElf(elf) {
     this.elves.add(elf);
@@ -65,7 +66,7 @@ class Troupe {
     return this.allOccupiedPositions;
   }
   positionIsOccupied(coord) {
-    return this.allPositionsXY.includes(yxCoord(coord));
+    return this.allOccupiedPositionsPositionsYX.includes(yxCoord(coord));
   }
 
   allSurroundingPositionsInDirectionAreFree([y,x], direction) {
@@ -134,7 +135,7 @@ class Troupe {
   elfCanMove(elf) {
     if(elf.proposedNewPosition === null) return false;
     const wantedCoord = yxCoord(elf.proposedNewPosition);
-    return !this.doublePositions.includes(wantedCoord);
+    return !this.allDuplicateProposedPositionsYX.includes(wantedCoord);
   }
 
   moveElves() {
@@ -143,7 +144,6 @@ class Troupe {
         elf.moveToProposedNewPosition();
       }
     }
-    this.captureState();
   }
 
 
@@ -209,7 +209,7 @@ const parseInput = (inputData) => {
       }
     }
   }
-  troupe.captureState();
+  troupe.captureAllOccupiedPositions();
   return troupe;
 }
 
@@ -220,7 +220,7 @@ const countRemainingEmptySquaresAfterRounds = (inputData, numRounds = 10) => {
 
     troupe.askElvesToProposeNewPosition();
 
-    troupe.captureProposeState();
+    troupe.captureDuplicateProposals();
 
     let c = 0;
     for(let elf of troupe.getElves()) {
@@ -242,8 +242,8 @@ const countRemainingEmptySquaresAfterRounds = (inputData, numRounds = 10) => {
 }
 
 // Part 1
-// const numEmptySquares = countRemainingEmptySquaresAfterRounds(inputData);
-// console.log(numEmptySquares);
+const numEmptySquares = countRemainingEmptySquaresAfterRounds(inputData);
+console.log(numEmptySquares);
 
 // Part 2
 const getRoundWhereNoElfMoves = (inputData) => {
@@ -252,8 +252,8 @@ const getRoundWhereNoElfMoves = (inputData) => {
   while (true) {
 
     troupe.askElvesToProposeNewPosition();
+    troupe.captureDuplicateProposals();
 
-    troupe.captureProposeState();
     let movingElfCount = 0;
 
     const elves = [...troupe.getElves()];
@@ -267,7 +267,9 @@ const getRoundWhereNoElfMoves = (inputData) => {
     }
 
     troupe.moveElves();
+    troupe.captureAllOccupiedPositions();
     troupe.moveDirectionOrder();
+
     console.log(`Round ${round}, ${movingElfCount} elves moved`);
 
     if(movingElfCount === 0) {
