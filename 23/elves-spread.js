@@ -3,24 +3,19 @@ const sampleData = fs.readFileSync('sample.txt', 'utf8');
 const inputData = fs.readFileSync('input.txt', 'utf8');
 
 const yxCoord = ([y,x]) => `${y.toString(10)}.${x.toString(10)}`;
-const coordYx = (coord) => coord.split(".").map((str) => str.toInt());
 
 class Elf {
-  id;
   currentPosition;
-  // positions;
   proposedNewPosition;
   canMove;
   constructor( currentPosition) {
     this.currentPosition = currentPosition;
-    // this.positions = [currentPosition];
     this.proposedNewPosition = null;
   }
 
   moveToProposedNewPosition() {
     if(this.proposedNewPosition) {
       this.currentPosition = [...this.proposedNewPosition];
-      // this.positions.push([...this.proposedNewPosition]);
       this.proposedNewPosition = null;
       this.canMove = false
     }
