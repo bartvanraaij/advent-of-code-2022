@@ -177,7 +177,7 @@ class Valley {
       // Starting position
       directionsToTry = ['v', '='];
     }
-    if(eY ===endY && eX===endX) {
+    if(eY===endY && eX===endX) {
       // Ending position
       directionsToTry = ['^', '='];
     }
@@ -216,11 +216,15 @@ const parseInput = (inputData) => {
 class ValleyRun {
   valley;
   currentMinute;
+  endPositions;
+  endPositionsYX;
 
-  constructor(valley, currentMinute, expeditionPosition) {
+  constructor(valley, currentMinute, expeditionPosition, endPositions, endPosNum = 1) {
     this.valley = valley.clone();
     this.currentMinute = currentMinute;
     this.valley.setExpeditionPosition(expeditionPosition);
+    this.endPositions = endPositions;
+    this.endPositionsYX = endPositions.map(yxCoord);
   }
 
   get expeditionPositionYX() {
@@ -228,7 +232,11 @@ class ValleyRun {
   }
 
   toString() {
-    return `${this.currentMinute}-${this.expeditionPositionYX}`;
+    return `${this.currentMinute}-${this.expeditionPositionYX}-${this.currentEndPosYX}`;
+  }
+
+  get currentEndPosYX() {
+    return this.endPositionsYX[0];
   }
 
   getNextRuns() {
@@ -238,23 +246,26 @@ class ValleyRun {
     const moveOpts = val.getExpeditionMoveOptions();
     const nextMinute = this.currentMinute+1;
     for(let moveToPosition of moveOpts) {
-      runsList.push(new ValleyRun(val, nextMinute, moveToPosition));
+      runsList.push(new ValleyRun(val, nextMinute, moveToPosition, [...this.endPositions]));
     }
-
     return runsList;
-
   }
 }
 
-const getQuickestValleyPath = (valley) => {
+const getQuickestValleyPath = (valley, thereAndBackAgain = false) => {
   let currentQuickestPath = Infinity;
-  const runs = [];
-  const endPositionYX = yxCoord(valley._expeditionEndPosition);
+  let runs = [];
   let currentMinute = 0;
+
+  const endPositions = thereAndBackAgain ? [
+    valley._expeditionEndPosition,
+    valley._expeditionStartPosition,
+    valley._expeditionEndPosition,
+  ] : [valley._expeditionEndPosition];
 
   // Starting state:
   runs.push(
-    new ValleyRun(valley, currentMinute, valley._expeditionStartPosition)
+    new ValleyRun(valley, currentMinute, valley._expeditionStartPosition, endPositions)
   );
   const visited = [];
   const willVisit = [];
@@ -269,23 +280,30 @@ const getQuickestValleyPath = (valley) => {
     visited.push(thisRun.toString());
     // thisRun.valley.draw(thisRun.currentMinute);
 
-    console.log({m: thisRun.currentMinute, p: thisRun.expeditionPositionYX,  l: runs.length, c: currentQuickestPath});
+    // console.log({r: thisRun.toString(), l: runs.length, c: currentQuickestPath});
 
     if(thisRun.currentMinute > currentQuickestPath) {
       continue;
     }
 
-    if(thisRun.expeditionPositionYX === endPositionYX) {
-      if(thisRun.currentMinute < currentQuickestPath) {
-        currentQuickestPath = thisRun.currentMinute;
+    if(thisRun.expeditionPositionYX === thisRun.currentEndPosYX) {
+      thisRun.endPositions.shift();
+      thisRun.endPositionsYX.shift();
+      runs = [];
+
+      if(thisRun.endPositions.length === 0) {
+        // This is the real end
+        return thisRun.currentMinute;
       }
     }
 
     // Next steps
-    for(let nextRun of thisRun.getNextRuns()) {
-      if(!willVisit.includes(nextRun.toString())) {
-        runs.push(nextRun);
-        willVisit.push(nextRun.toString());
+    if(thisRun.endPositions.length > 0) {
+      for (let nextRun of thisRun.getNextRuns()) {
+        if (!willVisit.includes(nextRun.toString())) {
+          runs.push(nextRun);
+          willVisit.push(nextRun.toString());
+        }
       }
     }
 
@@ -294,21 +312,18 @@ const getQuickestValleyPath = (valley) => {
     });
 
   } while (runs.length > 0);
-
-  return currentQuickestPath;
 }
 
-const getQuickestValleyPathFromInputData = (inputData) => {
+const getQuickestValleyPathFromInputData = (inputData, cycleBack = false) => {
   const valley = parseInput(inputData);
-  return getQuickestValleyPath(valley);
+  return getQuickestValleyPath(valley, cycleBack);
 }
 
 // Part 1
-const quickestPathTroughValley = getQuickestValleyPathFromInputData(sampleData);
+const quickestPathTroughValley = getQuickestValleyPathFromInputData(sampleData, false);
 console.log(quickestPathTroughValley);
 
 // Part 2
-// const valley = parseInput(sampleData);
-// const quickest = getQuickestValleyPath(valley);
-// console.log(quickest);
+const quickestPathTroughValleyCycle = getQuickestValleyPathFromInputData(sampleData, true);
+console.log(quickestPathTroughValleyCycle);
 
