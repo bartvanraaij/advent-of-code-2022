@@ -7,7 +7,7 @@ const coordYx = (coord) => coord.split(".").map((str) => parseInt(str, 10));
 
 const directions = ['>','<','v','^', '='];
 
-const moveCoord = ([cY, cX], direction, allowWrap = true, maxY, maxX) => {
+const moveCoord = ([cY, cX], direction, maxY, maxX) => {
   let nY, nX;
   if(direction === '>')  {
     nY = cY;
@@ -30,13 +30,45 @@ const moveCoord = ([cY, cX], direction, allowWrap = true, maxY, maxX) => {
     nX = cX;
   }
 
-  if(!allowWrap && (nY<1 || nY> maxY || nX <1 || nX > maxX)) {
-    return false;
+  if (nY < 1) nY = maxY;// Wrap around bottom
+  if (nY > maxY) nY = 1; // Wrap around top
+  if (nX < 1) nX = maxX; // Wrap around right
+  if (nX > maxX) nX = 1; // Wrap around left
+
+  return [nY, nX];
+}
+
+const moveExpeditionCoord = ([cY, cX], direction, startPos, endPos, maxY, maxX) => {
+  let nY, nX;
+  if(direction === '>')  {
+    nY = cY;
+    nX = cX+1;
   }
-  if(nY < 1) nY = maxY;// Wrap around bottom
-  if(nY > maxY) nY = 1; // Wrap around top
-  if(nX < 1) nX = maxX; // Wrap around right
-  if(nX > maxX) nX = 1; // Wrap around left
+  if(direction === '<')  {
+    nY = cY;
+    nX = cX-1;
+  }
+  if(direction === 'v')  {
+    nY = cY+1;
+    nX = cX;
+  }
+  if(direction === '^')  {
+    nY = cY-1;
+    nX = cX;
+  }
+  if(direction === '=')  {
+    nY = cY;
+    nX = cX;
+  }
+
+  let notAllowed = (nY<1 || nY> maxY || nX <1 || nX > maxX);
+
+  const [sY, sX] = startPos;
+  const [eY, eX] = endPos;
+  if((nY === sY && nX === sX)) notAllowed = false;
+  if((nY===eY && nX===eX)) notAllowed = false;
+
+  if(notAllowed) return false;
 
   return [nY, nX];
 }
@@ -46,15 +78,19 @@ class Valley {
   _blizzardPositions;
   _expeditionPosition;
   _expeditionPositionYX;
+  _expeditionStartPosition;
+  _expeditionEndPosition;
 
-  constructor(width, height) {
+  constructor(width, height, exStart, exEnd) {
     this.width = width;
     this.height = height;
     this._blizzardPositions = new Map();
+    this._expeditionStartPosition = exStart;
+    this._expeditionEndPosition = exEnd;
   }
 
   clone() {
-    const newValley = new Valley(this.width, this.height);
+    const newValley = new Valley(this.width, this.height, this._expeditionStartPosition, this._expeditionEndPosition);
     newValley._blizzardPositions = new Map(this._blizzardPositions.entries());
     newValley._expeditionPosition = this._expeditionPosition;
     newValley._expeditionPositionYX = this._expeditionPositionYX;
@@ -104,7 +140,7 @@ class Valley {
     for(let [yx, blizzards] of curr) {
       const coord = coordYx(yx);
       for(let blizzard of blizzards) {
-        const newPos = moveCoord(coord, blizzard, true, this.height, this.width);
+        const newPos = moveCoord(coord, blizzard, this.height, this.width);
         this.addBlizzardAtPosition(newPos, blizzard);
       }
     }
@@ -132,16 +168,28 @@ class Valley {
 
   getExpeditionMoveOptions() {
     const possibleMoves = [];
-    const possibleDirections = [];
-    for(let direction of directions) {
-      const thisNewPos = moveCoord(this._expeditionPosition, direction, false, this.height, this.width);
+
+    let directionsToTry = directions;
+    const [eY, eX] = this._expeditionPosition;
+    const [sY, sX] = this._expeditionStartPosition;
+    const [endY, endX] = this._expeditionEndPosition;
+    if(eY === sY && eX===sX) {
+      // Starting position
+      directionsToTry = ['v', '='];
+    }
+    if(eY ===endY && eX===endX) {
+      // Ending position
+      directionsToTry = ['^', '='];
+    }
+
+    for(let direction of directionsToTry) {
+      const thisNewPos = moveExpeditionCoord(this._expeditionPosition, direction, this._expeditionStartPosition, this._expeditionEndPosition, this.height, this.width);
       if(thisNewPos && !this.positionHasBlizzard(thisNewPos)) {
         possibleMoves.push(thisNewPos);
-        possibleDirections.push(direction);
       }
     }
     // Stay at the same place
-    return [possibleMoves, possibleDirections];
+    return possibleMoves;
   }
 }
 
@@ -149,7 +197,7 @@ const parseInput = (inputData) => {
   const lines = inputData.split('\n');
   const valleyWidth = lines[0].length - 2;
   const valleyHeight = lines.length -2;
-  const valley = new Valley(valleyWidth, valleyHeight);
+  const valley = new Valley(valleyWidth, valleyHeight, [0,1], [valleyHeight+1, valleyWidth]);
 
   for(let j = 1; j<=valleyHeight; j++) {
     for(let i=1; i<=valleyWidth; i++) {
@@ -187,7 +235,7 @@ class ValleyRun {
     const runsList = [];
     const val = this.valley.clone();
     val.moveBlizzards();
-    const [moveOpts, moveDirs] = val.getExpeditionMoveOptions();
+    const moveOpts = val.getExpeditionMoveOptions();
     const nextMinute = this.currentMinute+1;
     for(let moveToPosition of moveOpts) {
       runsList.push(new ValleyRun(val, nextMinute, moveToPosition));
@@ -198,25 +246,15 @@ class ValleyRun {
   }
 }
 
-const getQuickestValleyPath = (valley, startPosition, endPosition) => {
+const getQuickestValleyPath = (valley) => {
   let currentQuickestPath = Infinity;
   const runs = [];
-  const endPositionYX = yxCoord(endPosition);
+  const endPositionYX = yxCoord(valley._expeditionEndPosition);
   let currentMinute = 0;
-  let startingPositionAvailable = false;
-  while(true) {
-    startingPositionAvailable = valley.positionIsFree(startPosition);
-    if(startingPositionAvailable) {
-      break;
-    }
-    currentMinute++;
-    valley.moveBlizzards();
-  }
 
-  // console.log('Starting position found at minute', currentMinute);
   // Starting state:
   runs.push(
-    new ValleyRun(valley, currentMinute, startPosition)
+    new ValleyRun(valley, currentMinute, valley._expeditionStartPosition)
   );
   const visited = [];
   const willVisit = [];
@@ -229,8 +267,9 @@ const getQuickestValleyPath = (valley, startPosition, endPosition) => {
       continue;
     }
     visited.push(thisRun.toString());
+    // thisRun.valley.draw(thisRun.currentMinute);
 
-    // console.log({m: thisRun.currentMinute, p: thisRun.expeditionPositionYX,  l: runs.length, c: currentQuickestPath});
+    console.log({m: thisRun.currentMinute, p: thisRun.expeditionPositionYX,  l: runs.length, c: currentQuickestPath});
 
     if(thisRun.currentMinute > currentQuickestPath) {
       continue;
@@ -256,15 +295,20 @@ const getQuickestValleyPath = (valley, startPosition, endPosition) => {
 
   } while (runs.length > 0);
 
-  // Add one more minute for the final step
-  return currentQuickestPath+1;
+  return currentQuickestPath;
 }
 
 const getQuickestValleyPathFromInputData = (inputData) => {
   const valley = parseInput(inputData);
-  return getQuickestValleyPath(valley, [1,1], [valley.height, valley.width]);
+  return getQuickestValleyPath(valley);
 }
 
 // Part 1
-const quickestPathTroughValley = getQuickestValleyPathFromInputData(inputData);
+const quickestPathTroughValley = getQuickestValleyPathFromInputData(sampleData);
 console.log(quickestPathTroughValley);
+
+// Part 2
+// const valley = parseInput(sampleData);
+// const quickest = getQuickestValleyPath(valley);
+// console.log(quickest);
+
