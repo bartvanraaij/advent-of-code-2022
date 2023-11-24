@@ -2,7 +2,9 @@ use itertools::Itertools;
 use std::fs;
 
 fn elf_sums(raw_input: &str) -> impl Iterator<Item = i32> + '_ {
-    raw_input.split("\n\n").map(|elf_lines|  elf_lines.lines().flat_map(str::parse::<i32>).sum())
+    raw_input
+        .split("\n\n")
+        .map(|elf_lines| elf_lines.lines().flat_map(str::parse::<i32>).sum())
 }
 
 /// Part 1 - Find the Elf carrying the most Calories. How many total Calories is that Elf carrying?
