@@ -1,3 +1,6 @@
 .idea
 input.txt
 node_modules
+
+# Added by cargo
+/target
