@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use std::env;
 use std::fs;
 
 fn elf_sums(raw_input: &str) -> impl Iterator<Item = i32> + '_ {
@@ -20,8 +21,12 @@ fn part_2(raw_input: &str) -> i32 {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let default = &String::from("input.txt");
+    let input_filepath: &str = args.get(1).unwrap_or(default);
+
     // Read input file
-    let input = fs::read_to_string("input.txt").expect("input.txt should be readable");
+    let input = fs::read_to_string(input_filepath).expect("input.txt should be readable");
 
     let result_part_1 = part_1(&input);
     println!("{:?}", result_part_1);
